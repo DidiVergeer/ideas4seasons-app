@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "i4s-sales-demo",
-    "slug": "i4s-sales-demo",
+    "name": "ideas4seasons",
+    "slug": "ideas4seasons",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -52,8 +52,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "83e141dd-926b-446c-aa9a-0050926e5417"
+        "projectId": "18f45090-9b30-4290-b208-c02d1b974b29"
       }
     }
   }
 }
+
