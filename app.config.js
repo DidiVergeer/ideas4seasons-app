@@ -12,7 +12,7 @@ export default ({ config }) => {
     ...config,
 
     // ✅ REQUIRED by Reanimated in your setup
-    newArchEnabled: true,
+    newArchEnabled: false,
 
     // ✅ Keep this for stability testing (can revert to hermes later)
     jsEngine: "jsc",
@@ -24,6 +24,7 @@ export default ({ config }) => {
 
     plugins: [
       "expo-router",
+      "expo-barcode-scanner",
       [
         "expo-splash-screen",
         {
