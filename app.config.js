@@ -12,10 +12,10 @@ export default ({ config }) => {
     ...config,
 
     // ✅ REQUIRED by Reanimated in your setup
-    newArchEnabled: false,
+    newArchEnabled: true,
 
-    // ✅ Keep this for stability testing (can revert to hermes later)
-    jsEngine: "jsc",
+    // ✅ Stable combo with New Architecture on iOS (SDK 54)
+    jsEngine: "hermes",
 
     name: "Ideas4Seasons",
     slug: "ideas4seasons",
@@ -59,6 +59,13 @@ export default ({ config }) => {
 
     extra: {
       ...(config.extra || {}),
+
+      // ✅ REQUIRED so EAS can link the project (dynamic config fix)
+      eas: {
+        projectId: "18f45090-9b30-4290-b208-c02d1b974b29",
+      },
+
+      // public envs
       EXPO_PUBLIC_API_BASE_URL: safeBase,
       EXPO_PUBLIC_SETUP_KEY: safeKey,
     },
