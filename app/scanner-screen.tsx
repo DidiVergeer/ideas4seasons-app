@@ -1,6 +1,7 @@
 // app/(tabs)/scanner.tsx
 // ✅ FULL FILE (only price logic adjusted to use resolved customer price via getUnitPrice)
 
+import { useCart } from "@/components/cart/CartProvider";
 import {
     CameraView,
     useCameraPermissions,
@@ -9,7 +10,6 @@ import {
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { useCart } from "../../components/cart/CartProvider";
 
 type FoundProduct = {
   id: string; // itemcode

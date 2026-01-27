@@ -17,16 +17,7 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
-        }}
-      />
-
+      {/* ✅ gewenste tabs */}
       <Tabs.Screen
         name="products"
         options={{
@@ -38,11 +29,11 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="customers"
+        name="scanner"
         options={{
-          title: "Customers",
+          title: "Scanner",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.2.fill" color={color} />
+            <IconSymbol size={28} name="barcode.viewfinder" color={color} />
           ),
         }}
       />
@@ -58,6 +49,16 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="customers"
+        options={{
+          title: "Customers",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="person.2.fill" color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
@@ -66,6 +67,20 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* ❌ VERBERG template/demo routes */}
+      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen name="home" options={{ href: null }} />
+      <Tabs.Screen name="explore" options={{ href: null }} />
+
+      {/* ❌ VERBERG product routes als tab (blijven wel bereikbaar via router.push) */}
+      <Tabs.Screen name="product" options={{ href: null }} />
+      <Tabs.Screen name="product/index" options={{ href: null }} />
+      <Tabs.Screen name="product/[id]" options={{ href: null }} />
+
+      {/* ❌ VERBERG customers nested routes als tab (alleen via Customers tab-stack) */}
+      <Tabs.Screen name="customers/index" options={{ href: null }} />
+      <Tabs.Screen name="customers/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
