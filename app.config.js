@@ -22,22 +22,19 @@ export default ({ config }) => {
     scheme: "ideas4seasons",
     icon: "./assets/images/icon.png",
 
-    plugins: [
-      "expo-router",
-      "expo-barcode-scanner",
-      [
-        "expo-splash-screen",
-        {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: { backgroundColor: "#000000" },
-        },
-      ],
-      // TEMP: leave sqlite plugin out until app launches stable
-      // "expo-sqlite",
-    ],
+   plugins: [
+  "expo-router",
+  [
+    "expo-splash-screen",
+    {
+      image: "./assets/images/splash-icon.png",
+      imageWidth: 200,
+      resizeMode: "contain",
+      backgroundColor: "#ffffff",
+      dark: { backgroundColor: "#000000" },
+    },
+  ],
+],
 
     ios: {
       ...(config.ios || {}),
