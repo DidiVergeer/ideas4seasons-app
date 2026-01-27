@@ -3,9 +3,9 @@
 
 import { useCart } from "@/components/cart/CartProvider";
 import {
-    CameraView,
-    useCameraPermissions,
-    type BarcodeScanningResult,
+  CameraView,
+  useCameraPermissions,
+  type BarcodeScanningResult,
 } from "expo-camera";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -245,6 +245,8 @@ export default function ScannerScreen() {
 
   // ✅ na 1 scan: scanning uit (voorkomt zwart/knipper)
   const [scanEnabled, setScanEnabled] = useState(true);
+  // ✅ hard lock: voorkomt dubbele/rare scans (belangrijk op iOS)
+const scanningRef = useRef(false);
 
   // ✅ recent gescand (blijft zichtbaar in sessie)
   const [recentScanned, setRecentScanned] = useState<RecentScanned[]>([]);
@@ -614,15 +616,29 @@ export default function ScannerScreen() {
   }, []);
 
   const onBarcodeScanned = useCallback(
-    (result: BarcodeScanningResult) => {
-      if (!scanEnabled) return;
-      const raw = String(result?.data ?? "");
-      const code = digitsOnly(raw);
-      if (!/^\d{8,14}$/.test(code)) return;
-      void processCode(code);
-    },
-    [scanEnabled, processCode]
-  );
+  (result: BarcodeScanningResult) => {
+    if (!scanEnabled) return;
+    if (scanningRef.current) return;
+
+    const raw = String(result?.data ?? "").trim();
+    const code = digitsOnly(raw);
+
+    // ✅ alleen EAN-13 (jullie use-case)
+    if (code.length !== 13) return;
+
+    // ✅ lock meteen (heel belangrijk op iOS)
+    scanningRef.current = true;
+
+    void processCode(code).finally(() => {
+      // ✅ lock na korte delay weer vrij
+      setTimeout(() => {
+        scanningRef.current = false;
+      }, 800);
+    });
+  },
+  [scanEnabled, processCode]
+);
+
 
   function Card({ children }: { children: React.ReactNode }) {
     return (
@@ -640,16 +656,21 @@ export default function ScannerScreen() {
     );
   }
 
-  const resetForNextScan = async () => {
-    setError(null);
-    setLastScanned("");
-    setFoundProduct(null);
-    setScanEnabled(true);
+ const resetForNextScan = async () => {
+  setError(null);
+  setLastScanned("");
+  setFoundProduct(null);
+  setScanEnabled(true);
 
-    if (Platform.OS === "web" && cameraActive) {
-      await startCamera();
-    }
-  };
+  // ✅ lock resetten
+  scanningRef.current = false;
+
+  // ✅ alleen nodig op web (ZXing)
+  if (Platform.OS === "web" && cameraActive) {
+    await startCamera();
+  }
+};
+
 
   return (
     <ScrollView
@@ -776,7 +797,7 @@ export default function ScannerScreen() {
                   facing="back"
                   onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
                   barcodeScannerSettings={{
-                    barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
+                    barcodeTypes: ["ean13"],
                   }}
                 />
               )
