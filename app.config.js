@@ -12,7 +12,7 @@ export default ({ config }) => {
     ...config,
 
     // ❗️BELANGRIJK: UITZETTEN — voorkomt TurboModule crashes
-    newArchEnabled: false,
+    newArchEnabled: true,
 
     // ✅ stabiel met expo-camera
     jsEngine: "hermes",
