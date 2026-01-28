@@ -11,10 +11,10 @@ export default ({ config }) => {
   return {
     ...config,
 
-    // ✅ REQUIRED by Reanimated in your setup
-    newArchEnabled: true,
+    // ❗️BELANGRIJK: UITZETTEN — voorkomt TurboModule crashes
+    newArchEnabled: false,
 
-    // ✅ Stable combo with New Architecture on iOS (SDK 54)
+    // ✅ stabiel met expo-camera
     jsEngine: "hermes",
 
     name: "Ideas4Seasons",
@@ -22,25 +22,30 @@ export default ({ config }) => {
     scheme: "ideas4seasons",
     icon: "./assets/images/icon.png",
 
-   plugins: [
-  "expo-router",
-  [
-    "expo-splash-screen",
-    {
-      image: "./assets/images/splash-icon.png",
-      imageWidth: 200,
-      resizeMode: "contain",
-      backgroundColor: "#ffffff",
-      dark: { backgroundColor: "#000000" },
-    },
-  ],
-],
+    plugins: [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/images/splash-icon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#ffffff",
+          dark: { backgroundColor: "#000000" },
+        },
+      ],
+    ],
 
     ios: {
       ...(config.ios || {}),
       bundleIdentifier: "com.ideas4seasons.sales",
-      buildNumber: config?.ios?.buildNumber ?? "1",
+
+      // ❗️BUILD NUMBER OMHOOG (verplicht)
+      buildNumber: "14",
+
       supportsTablet: true,
+
+      // ✅ DIT IS DE CRUCIALE FIX
       infoPlist: {
         ...(config?.ios?.infoPlist || {}),
         NSCameraUsageDescription:
@@ -51,13 +56,13 @@ export default ({ config }) => {
     android: {
       ...(config.android || {}),
       package: "com.ideas4seasons.sales",
-      versionCode: config?.android?.versionCode ?? 1,
+      versionCode: (config?.android?.versionCode ?? 1) + 1,
     },
 
     extra: {
       ...(config.extra || {}),
 
-      // ✅ REQUIRED so EAS can link the project (dynamic config fix)
+      // ✅ REQUIRED so EAS can link the project
       eas: {
         projectId: "18f45090-9b30-4290-b208-c02d1b974b29",
       },
