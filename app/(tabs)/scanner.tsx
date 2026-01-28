@@ -7,16 +7,19 @@ import ScannerScreen from "../scanner-screen";
 export default function ScannerTabRoute() {
   const [permission, requestPermission] = useCameraPermissions();
   const [requestedOnce, setRequestedOnce] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   const granted = !!permission?.granted;
+  const canAskAgain = permission?.canAskAgain ?? true;
 
   const statusText = useMemo(() => {
-    if (!permission) return "Camera toestemming is nodig om barcodes te scannen.";
+    if (!permission) return "Camera toestemming wordt geladen…";
     if (granted) return "Camera toestemming is gegeven.";
+    if (!canAskAgain)
+      return "Camera toestemming is geweigerd en iOS vraagt niet opnieuw. Zet camera-toegang aan in Instellingen.";
     return "Camera toestemming is geweigerd. Geef toestemming om te scannen.";
-  }, [permission, granted]);
+  }, [permission, granted, canAskAgain]);
 
-  // ✅ Nog niet geladen / status onbekend
   if (!permission) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -25,7 +28,6 @@ export default function ScannerTabRoute() {
     );
   }
 
-  // ✅ Geen toestemming → eerst permissie scherm
   if (!granted) {
     return (
       <View style={{ flex: 1, padding: 20, justifyContent: "center" }}>
@@ -37,23 +39,40 @@ export default function ScannerTabRoute() {
           {statusText}
         </Text>
 
-        <Pressable
-          onPress={async () => {
-            setRequestedOnce(true);
-            await requestPermission();
-          }}
-          style={{
-            marginTop: 16,
-            backgroundColor: "#059669",
-            paddingVertical: 12,
-            borderRadius: 14,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "white", fontWeight: "900" }}>
-            {requestedOnce ? "Opnieuw proberen" : "Geef camera-toestemming"}
-          </Text>
-        </Pressable>
+        {canAskAgain ? (
+          <Pressable
+            disabled={isRequesting}
+            onPress={async () => {
+              if (isRequesting) return;
+              setRequestedOnce(true);
+              setIsRequesting(true);
+              try {
+                const res = await requestPermission();
+                console.log("[ScannerTab] requestPermission result:", res);
+              } catch (e) {
+                console.warn("[ScannerTab] requestPermission error:", e);
+              } finally {
+                setIsRequesting(false);
+              }
+            }}
+            style={{
+              marginTop: 16,
+              backgroundColor: isRequesting ? "#34D399" : "#059669",
+              paddingVertical: 12,
+              borderRadius: 14,
+              alignItems: "center",
+              opacity: isRequesting ? 0.85 : 1,
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "900" }}>
+              {isRequesting
+                ? "Toestemming aanvragen…"
+                : requestedOnce
+                  ? "Opnieuw proberen"
+                  : "Geef camera-toestemming"}
+            </Text>
+          </Pressable>
+        ) : null}
 
         <Text style={{ marginTop: 14, color: "#6B7280", fontSize: 12 }}>
           Tip: als iOS het blokkeert, ga naar Instellingen → Privacy → Camera → Ideas4Seasons Sales.
@@ -62,6 +81,6 @@ export default function ScannerTabRoute() {
     );
   }
 
-  // ✅ Toestemming gegeven → nu pas echte scanner laden
+  // ✅ Alleen hierna mount je de echte scanner (geen permission-conflict meer)
   return <ScannerScreen />;
 }

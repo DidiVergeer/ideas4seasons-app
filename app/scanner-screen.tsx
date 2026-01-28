@@ -640,6 +640,7 @@ const scanningRef = useRef(false);
 );
 
 
+
   function Card({ children }: { children: React.ReactNode }) {
     return (
       <View
@@ -656,21 +657,16 @@ const scanningRef = useRef(false);
     );
   }
 
- const resetForNextScan = async () => {
-  setError(null);
-  setLastScanned("");
-  setFoundProduct(null);
-  setScanEnabled(true);
+  const resetForNextScan = async () => {
+    setError(null);
+    setLastScanned("");
+    setFoundProduct(null);
+    setScanEnabled(true);
 
-  // ✅ lock resetten
-  scanningRef.current = false;
-
-  // ✅ alleen nodig op web (ZXing)
-  if (Platform.OS === "web" && cameraActive) {
-    await startCamera();
-  }
-};
-
+    if (Platform.OS === "web" && cameraActive) {
+      await startCamera();
+    }
+  };
 
   return (
     <ScrollView
