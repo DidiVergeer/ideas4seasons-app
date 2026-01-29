@@ -93,9 +93,42 @@ export const CATEGORY_COVERS: Record<string, any> = {
   "vases:handmade-heavy-glass": require("../../assets/subcategories/vases/handmade-heavy-glass.jpg"),
   "vases:machine-made": require("../../assets/subcategories/vases/machine-made.jpg"),
 
+"aroma:new": require("../../assets/subcategories/aroma/new.jpg"),
+"aroma:all": require("../../assets/subcategories/aroma/all.jpg"),
+"aroma:accessories": require("../../assets/subcategories/aroma/accessoires.jpg"),
+"aroma:cubes": require("../../assets/subcategories/aroma/cubes.jpg"),
+"aroma:giftbox": require("../../assets/subcategories/aroma/giftbox.jpg"),
+"aroma:shapes": require("../../assets/subcategories/aroma/shapes.jpg"),
+"aroma:bowl": require("../../assets/subcategories/aroma/bowl.jpg"),
+"aroma:diffusers": require("../../assets/subcategories/aroma/diffusers.jpg"),
+
+"candles:new": require("../../assets/subcategories/candles/new.jpg"),
+"candles:all": require("../../assets/subcategories/candles/all.jpg"),
+"candles:candle-holders": require("../../assets/subcategories/candles/candle-holders.jpg"),
+"candles:bliss": require("../../assets/subcategories/candles/bliss.jpg"),
+"candles:pearlsand": require("../../assets/subcategories/candles/pearlsand.jpg"),
+"candles:pimped": require("../../assets/subcategories/candles/pimped.jpg"),
+"candles:pencil": require("../../assets/subcategories/candles/pencil.jpg"),
+"candles:taper": require("../../assets/subcategories/candles/taper.jpg"),
+"candles:gold-spray": require("../../assets/subcategories/candles/gold-spray.jpg"),
+"candles:dip-dye": require("../../assets/subcategories/candles/dip-dye.jpg"),
+"candles:tree": require("../../assets/subcategories/candles/tree.jpg"),
+
+"led-candle:new": require("../../assets/subcategories/led-candle/new.jpg"),
+"led-candle:all": require("../../assets/subcategories/led-candle/all.jpg"),
+"led-candle:cannelure": require("../../assets/subcategories/led-candle/cannelure.jpg"),
+"led-candle:wood": require("../../assets/subcategories/led-candle/wood.jpg"),
+"led-candle:tracy": require("../../assets/subcategories/led-candle/tracy.jpg"),
+"led-candle:wax-shape": require("../../assets/subcategories/led-candle/wax-shape.jpg"),
+"led-candle:pillar": require("../../assets/subcategories/led-candle/pillar.jpg"),
+"led-candle:pencil": require("../../assets/subcategories/led-candle/pencil.jpg"),
+"led-candle:honeycomb": require("../../assets/subcategories/led-candle/honeycomb.jpg"),
+"led-candle:dinner": require("../../assets/subcategories/led-candle/dinner.jpg"),
+"led-candle:floating": require("../../assets/subcategories/led-candle/floating.jpg"),
+"led-candle:oil-lamp": require("../../assets/subcategories/led-candle/oil-lamp.jpg"),
+"led-candle:chargeable": require("../../assets/subcategories/led-candle/chargeable.jpg"),
+"led-candle:various": require("../../assets/subcategories/led-candle/various.jpg"),
 };
-
-
 
 // =========================
 // Helpers

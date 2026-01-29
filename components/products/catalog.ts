@@ -310,6 +310,8 @@ const GLASS_MACHINE_MADE_CODES = new Set<string>([
   "35193",
 ]);
 
+const LED_CHARGEABLE = new Set(["30157", "30158"]);
+
 type SubPick = { id: string; name: string };
 
 const GLASS_SUBNAME: Record<string, string> = {
@@ -627,6 +629,75 @@ function inferVasesSubcategories(r: AfasProductRow): { primary: SubPick; extras:
   return { primary: { id: primaryId, name: VASES_SUBNAME[primaryId] ?? primaryId }, extras };
 }
 
+function inferAromaSubcategory(r: AfasProductRow) {
+  const { c2, c5 } = getCategoryFields(r);
+
+  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
+
+  if (containsText(c2 || "", "access")) return { subId: "accessories", subName: "Accessories" };
+  if (containsText(c2 || "", "cubes")) return { subId: "cubes", subName: "Cubes" };
+  if (containsText(c2 || "", "gift")) return { subId: "giftbox", subName: "Aroma gift box" };
+  if (containsText(c2 || "", "shapes")) return { subId: "shapes", subName: "Shapes" };
+  if (containsText(c2 || "", "bowl")) return { subId: "bowl", subName: "Bowl" };
+  if (containsText(c2 || "", "diffuser")) return { subId: "diffusers", subName: "Diffusers" };
+
+  return { subId: "all", subName: "Alle artikelen" };
+}
+
+function inferCandlesSubcategory(r: AfasProductRow) {
+  const { c2, c5 } = getCategoryFields(r);
+
+  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
+
+  // candle holders (soms onder Glass)
+  if (containsText(c2 || "", "bubble tealight holder") || containsText(c2 || "", "candle holder")) {
+    return { subId: "candle-holders", subName: "Candle holders" };
+  }
+
+  if (containsText(c2 || "", "bliss dinner")) return { subId: "bliss", subName: "Bliss dinner" };
+  if (containsText(c2 || "", "pearlsand")) return { subId: "pearlsand", subName: "Pearlsand" };
+  if (containsText(c2 || "", "pimped")) return { subId: "pimped", subName: "Pimped" };
+  if (containsText(c2 || "", "dip dye")) return { subId: "dip-dye", subName: "Dip Dye" };
+  if (containsText(c2 || "", "gold spray")) return { subId: "gold-spray", subName: "Dinner gold spray" };
+  if (containsText(c2 || "", "tree")) return { subId: "tree", subName: "Tree" };
+  if (containsText(c2 || "", "taper")) return { subId: "taper", subName: "Taper" };
+  if (containsText(c2 || "", "pencil")) return { subId: "pencil", subName: "Pencil" };
+
+  return { subId: "all", subName: "Alle artikelen" };
+}
+
+function inferLedCandleSubcategory(r: AfasProductRow) {
+  const { c2, c5 } = getCategoryFields(r);
+
+  const item = normalizeItemcodeDigits((r as any)?.itemcode);
+  if (LED_CHARGEABLE.has(String(item))) return { subId: "chargeable", subName: "Chargeable" };
+
+  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
+
+  if (containsText(c2 || "", "cannelure")) return { subId: "cannelure", subName: "Cannelure" };
+  if (containsText(c2 || "", "wood")) return { subId: "wood", subName: "Wood" };
+  if (containsText(c2 || "", "tracy")) return { subId: "tracy", subName: "Tracy" };
+  if (containsText(c2 || "", "wax shape")) return { subId: "wax-shape", subName: "Wax shape" };
+  if (containsText(c2 || "", "pillar")) return { subId: "pillar", subName: "Pillar" };
+  if (containsText(c2 || "", "pencil")) return { subId: "pencil", subName: "Pencil" };
+  if (containsText(c2 || "", "honeycomb")) return { subId: "honeycomb", subName: "Honeycomb" };
+  if (containsText(c2 || "", "floating")) return { subId: "floating", subName: "Floating" };
+
+  // oil lamp / nooili / led with glass
+  if (containsText(c2 || "", "nooili") || containsText(c2 || "", "oil") || containsText(c2 || "", "led with glass")) {
+    return { subId: "oil-lamp", subName: "Oil lamp" };
+  }
+
+  if (containsText(c2 || "", "dinner")) return { subId: "dinner", subName: "Dinner" };
+
+  // Various = "Led candle > led"
+  if (containsText(c2 || "", " > led") || equalsText(c2 || "", "led candle > led")) {
+    return { subId: "various", subName: "Various" };
+  }
+
+  return { subId: "all", subName: "Alle artikelen" };
+}
+
 // ✅ Helper: detecteer de vase-subcats die in AFAS onder "Glas" hangen
 function isVasesGlassBucket(r: AfasProductRow): boolean {
   const { c2 } = getCategoryFields(r);
@@ -648,6 +719,8 @@ function isVasesGlassBucket(r: AfasProductRow): boolean {
    Category mapping (Category 1 + special rules)
    ========================================================= */
 
+   
+
 function inferCategoryFromRow(r: AfasProductRow): {
   catId: string;
   catName: string;
@@ -655,10 +728,54 @@ function inferCategoryFromRow(r: AfasProductRow): {
   subName: string;
   extraSubIds: string[];
 } {
-  const { c1, c3, c4, c5 } = getCategoryFields(r);
+  const { c1, c2, c3, c4, c5 } = getCategoryFields(r);
 
   const c1n = normCat(c1 || "");
   const c3n = normCat(c3 || "");
+
+    // =========================
+  // ✅ Aroma / Candles / LED candle / Pottery overrides + mapping
+  // (moet boven Glass/Vases/New etc.)
+  // =========================
+
+  // 1) HARD override: candle holders die AFAS soms onder Glass zet
+  if (containsText(c2 || "", "bubble tealight holder")) {
+    const { subId, subName } = inferCandlesSubcategory(r);
+    return { catId: "candles", catName: "Candles", subId, subName, extraSubIds: [] };
+  }
+
+  // 2) LED chargeable override (op itemcode)
+  {
+    const item = normalizeItemcodeDigits((r as any)?.itemcode);
+    if (LED_CHARGEABLE.has(String(item))) {
+      const { subId, subName } = inferLedCandleSubcategory(r);
+      return { catId: "led-candle", catName: "Led candle", subId, subName, extraSubIds: [] };
+    }
+  }
+
+  // 3) Aroma (category_1 = Aroma)
+  if (c1n === "aroma") {
+    const { subId, subName } = inferAromaSubcategory(r);
+    return { catId: "aroma", catName: "Aroma", subId, subName, extraSubIds: [] };
+  }
+
+  // 4) Candles (category_1 = Candles)
+  if (c1n === "candles" || c1n === "kaarsen" || c1n === "candle") {
+    const { subId, subName } = inferCandlesSubcategory(r);
+    return { catId: "candles", catName: "Candles", subId, subName, extraSubIds: [] };
+  }
+
+  // 5) Led candle (AFAS varianten)
+  if (c1n === "led candle" || c1n === "led candles" || c1n === "led kaarsen" || c1n === "ledcandle") {
+    const { subId, subName } = inferLedCandleSubcategory(r);
+    return { catId: "led-candle", catName: "Led candle", subId, subName, extraSubIds: [] };
+  }
+
+  // 6) Sommige LED regels lijken in category_2 op "Candles > led candle tracy"
+  if (containsText(c2 || "", "led candle")) {
+    const { subId, subName } = inferLedCandleSubcategory(r);
+    return { catId: "led-candle", catName: "Led candle", subId, subName, extraSubIds: [] };
+  }
 
   // ✅ OVERRIDE: Lamp & dishes tonen onder Glass, ook als AFAS category_1 bv. Candles is
   // Alleen voor deze vaste itemcode-set (dus geen "mix" van andere candles)
