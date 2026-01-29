@@ -17,7 +17,7 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
       }}
     >
-      {/* ✅ gewenste tabs */}
+      {/* ✅ gewenste tabs (alleen top-level routes) */}
       <Tabs.Screen
         name="products"
         options={{
@@ -68,19 +68,16 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ❌ VERBERG template/demo routes */}
+      {/* ❌ verberg template/demo routes */}
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="home" options={{ href: null }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
 
-      {/* ❌ VERBERG product routes als tab (blijven wel bereikbaar via router.push) */}
+      {/* ❌ verberg "product" als tab (routes bestaan nog steeds als files) */}
       <Tabs.Screen name="product" options={{ href: null }} />
-      <Tabs.Screen name="product/index" options={{ href: null }} />
-      <Tabs.Screen name="product/[id]" options={{ href: null }} />
 
-      {/* ❌ VERBERG customers nested routes als tab (alleen via Customers tab-stack) */}
-      <Tabs.Screen name="customers/index" options={{ href: null }} />
-      <Tabs.Screen name="customers/[id]" options={{ href: null }} />
+      {/* ❌ verberg "customers" subroutes als tab: NIET expliciet opnemen */}
+      {/* (customers/index en customers/[id] worden via de folder-route afgehandeld) */}
     </Tabs>
   );
 }
