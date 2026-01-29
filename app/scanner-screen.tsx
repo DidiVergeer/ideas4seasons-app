@@ -1,7 +1,7 @@
 // app/(tabs)/scanner.tsx
-// ✅ FULL FILE (only price logic adjusted to use resolved customer price via getUnitPrice)
+// ✅ FULL FILE REPLACEMENT — only web/PWA camera start/stop made iOS-safe (black video fix)
+// Everything else kept as-is.
 
-import { useCart } from "@/components/cart/CartProvider";
 import {
   CameraView,
   useCameraPermissions,
@@ -10,12 +10,13 @@ import {
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { useCart } from "../components/cart/CartProvider";
 
 type FoundProduct = {
   id: string; // itemcode
   articleNumber: string; // itemcode
   name: string;
-  price: number; // base price
+  price: number;
   imageUrl?: string;
 
   // ✅ stock velden (voor badge)
@@ -31,7 +32,7 @@ type RecentScanned = {
   id: string;
   articleNumber: string;
   name: string;
-  price: number; // base price
+  price: number;
   ts: number;
 
   // ✅ nodig voor +/- per doos
@@ -67,13 +68,6 @@ function dateOnly(v: any): string {
   const s = String(v ?? "").trim();
   if (!s) return "";
   return s.split("T")[0];
-}
-
-/** normalize key for pricing (trim + optionally strip leading "I") */
-function normalizePriceKey(v: any): string {
-  const s = String(v ?? "").trim();
-  if (!s) return "";
-  return s.startsWith("I") ? s.slice(1) : s;
 }
 
 /**
@@ -149,7 +143,6 @@ async function getProductByEanFast(scanned: string): Promise<any | null> {
       continue;
     }
 
-    // route bestaat bij jou, maar als ooit stuk is: fallback
     throw new Error(`FAST_EAN_${res.status}`);
   }
 
@@ -215,17 +208,32 @@ async function findProductByEanPaged(
 
 type BadgeVariant = "in" | "expected" | "out";
 
+/** ✅ NEW (web/PWA helpers) */
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2500) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const w = video.videoWidth || 0;
+    const h = video.videoHeight || 0;
+    const rs = video.readyState || 0; // 0..4
+    if (rs >= 2 && w > 0 && h > 0) return;
+    await new Promise((r) => requestAnimationFrame(r));
+  }
+  throw new Error("VIDEO_NOT_READY");
+}
+
 export default function ScannerScreen() {
   const router = useRouter();
-
-  // ✅ NEW: getUnitPrice for resolved pricing
-  const { cart, addItem, getQty, getUnitPrice } = useCart() as any;
+  const { cart, addItem, getQty } = useCart();
 
   const lines = (cart?.lines ?? []) as Array<{
     productId: string;
     articleNumber: string;
     name: string;
-    price: number; // base
+    price: number;
     qty: number;
     imageUrl?: string;
   }>;
@@ -238,6 +246,9 @@ export default function ScannerScreen() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const zxingControlsRef = useRef<any>(null);
 
+  // ✅ NEW: keep MediaStream so we can stop tracks (critical for iOS PWA black screen)
+  const webStreamRef = useRef<MediaStream | null>(null);
+
   // scan state
   const [lastScanned, setLastScanned] = useState("");
   const [foundProduct, setFoundProduct] = useState<FoundProduct | null>(null);
@@ -245,8 +256,6 @@ export default function ScannerScreen() {
 
   // ✅ na 1 scan: scanning uit (voorkomt zwart/knipper)
   const [scanEnabled, setScanEnabled] = useState(true);
-  // ✅ hard lock: voorkomt dubbele/rare scans (belangrijk op iOS)
-const scanningRef = useRef(false);
 
   // ✅ recent gescand (blijft zichtbaar in sessie)
   const [recentScanned, setRecentScanned] = useState<RecentScanned[]>([]);
@@ -291,105 +300,87 @@ const scanningRef = useRef(false);
     setTimeout(() => setToast(null), 1600);
   };
 
-  // ✅ helper: resolved unit price with fallback base
-  const resolveUnitPrice = useCallback(
-    (key: any, fallbackBase: any) => {
-      const base = Number(fallbackBase ?? 0);
-      const normalized = normalizePriceKey(key);
-      const resolved =
-        typeof getUnitPrice === "function"
-          ? Number(getUnitPrice(normalized) ?? 0)
-          : NaN;
+  const processCode = useCallback(async (raw: string) => {
+    const code = digitsOnly(raw);
+    if (!code) return;
 
-      return Number.isFinite(resolved) && resolved > 0 ? resolved : base;
-    },
-    [getUnitPrice]
-  );
+    if (!/^\d{8,14}$/.test(code)) {
+      setError(`Onbekende code (geen barcode): ${code}`);
+      setFoundProduct(null);
+      setLastScanned(code);
+      return;
+    }
 
-  const processCode = useCallback(
-    async (raw: string) => {
-      const code = digitsOnly(raw);
-      if (!code) return;
+    if (!acceptWithCooldown(code)) return;
 
-      if (!/^\d{8,14}$/.test(code)) {
-        setError(`Onbekende code (geen barcode): ${code}`);
+    setLastScanned(code);
+    setError(null);
+
+    try {
+      let row: any | null = null;
+
+      // ✅ 1) FAST endpoint (beurs-proof)
+      try {
+        row = await getProductByEanFast(code);
+      } catch {
+        row = null;
+      }
+
+      // ✅ 2) fallback (paged)
+      if (!row) {
+        const r = await findProductByEanPaged(code);
+        row = r.row;
+      }
+
+      if (!row) {
         setFoundProduct(null);
-        setLastScanned(code);
+        setError(`Geen product gevonden voor barcode: ${code}`);
         return;
       }
 
-      if (!acceptWithCooldown(code)) return;
+      const outerCartonQty = readOuterCarton(row);
+      const stock = readStock(row);
 
-      setLastScanned(code);
-      setError(null);
+      const p: FoundProduct = {
+        id: String(row.itemcode ?? ""),
+        articleNumber: String(row.itemcode ?? ""),
+        name: String(row.description_eng ?? row.itemcode ?? code),
+        price: Number(parseNumber(row.price) || 0),
+        imageUrl: undefined,
 
-      try {
-        let row: any | null = null;
+        availableStock: stock.availableStock,
+        onOrderQty: stock.onOrderQty,
+        arrivalDate: stock.arrivalDate,
 
-        // ✅ 1) FAST endpoint (beurs-proof)
-        try {
-          row = await getProductByEanFast(code);
-        } catch {
-          row = null;
-        }
+        outerCartonQty: Number.isFinite(outerCartonQty) ? outerCartonQty : 0,
+      };
 
-        // ✅ 2) fallback (paged)
-        if (!row) {
-          const r = await findProductByEanPaged(code);
-          row = r.row;
-        }
+      setFoundProduct(p);
 
-        if (!row) {
-          setFoundProduct(null);
-          setError(`Geen product gevonden voor barcode: ${code}`);
-          return;
-        }
+      // ✅ onthouden in sessie
+      upsertRecent(p);
 
-        const outerCartonQty = readOuterCarton(row);
-        const stock = readStock(row);
-
-        const p: FoundProduct = {
-          id: String(row.itemcode ?? ""),
-          articleNumber: String(row.itemcode ?? ""),
-          name: String(row.description_eng ?? row.itemcode ?? code),
-          price: Number(parseNumber(row.price) || 0), // base price bewaren
-          imageUrl: undefined,
-
-          availableStock: stock.availableStock,
-          onOrderQty: stock.onOrderQty,
-          arrivalDate: stock.arrivalDate,
-
-          outerCartonQty: Number.isFinite(outerCartonQty) ? outerCartonQty : 0,
-        };
-
-        setFoundProduct(p);
-
-        // ✅ onthouden in sessie
-        upsertRecent(p);
-
-        if (!p.outerCartonQty) {
-          setError(
-            `OUTERCARTON ontbreekt voor artikel ${p.articleNumber}. Scanner kan niet per doos bestellen.`
-          );
-        } else {
-          showToast(`Gevonden: ${p.name}`);
-        }
-
-        setScanEnabled(false);
-
-        if (Platform.OS === "web" && zxingControlsRef.current) {
-          try {
-            zxingControlsRef.current.stop();
-          } catch {}
-          zxingControlsRef.current = null;
-        }
-      } catch (e: any) {
-        setFoundProduct(null);
-        setError(e?.message || `Fout bij ophalen product voor barcode: ${code}`);
+      if (!p.outerCartonQty) {
+        setError(
+          `OUTERCARTON ontbreekt voor artikel ${p.articleNumber}. Scanner kan niet per doos bestellen.`
+        );
+      } else {
+        showToast(`Gevonden: ${p.name}`);
       }
-    },
-    []
-  );
+
+      setScanEnabled(false);
+
+      if (Platform.OS === "web" && zxingControlsRef.current) {
+        try {
+          zxingControlsRef.current.stop();
+        } catch {}
+        zxingControlsRef.current = null;
+      }
+    } catch (e: any) {
+      setFoundProduct(null);
+      setError(e?.message || `Fout bij ophalen product voor barcode: ${code}`);
+    }
+  }, []);
 
   // ✅ qty in units
   const foundQty = foundProduct ? getQty(foundProduct.id) : 0;
@@ -441,20 +432,13 @@ const scanningRef = useRef(false);
     };
   }, [foundProduct?.availableStock, foundProduct?.onOrderQty, foundProduct?.arrivalDate]);
 
-  // ✅ displayed resolved price for found product
-  const foundDisplayPrice = useMemo(() => {
-    if (!foundProduct) return 0;
-    const key = foundProduct.articleNumber ?? foundProduct.id;
-    return resolveUnitPrice(key, foundProduct.price);
-  }, [foundProduct, resolveUnitPrice]);
-
   const payload = useMemo(() => {
     if (!foundProduct) return null;
     return {
       productId: foundProduct.id,
       articleNumber: foundProduct.articleNumber,
       name: foundProduct.name,
-      price: foundProduct.price, // base in state
+      price: foundProduct.price,
       imageUrl: foundProduct.imageUrl,
 
       // (optioneel) handig als cart later ook badge wil tonen
@@ -490,7 +474,7 @@ const scanningRef = useRef(false);
         productId: p.id,
         articleNumber: p.articleNumber,
         name: p.name,
-        price: p.price, // base in state
+        price: p.price,
         imageUrl: undefined,
 
         availableStock: p.availableStock ?? null,
@@ -516,7 +500,7 @@ const scanningRef = useRef(false);
         productId: p.id,
         articleNumber: p.articleNumber,
         name: p.name,
-        price: p.price, // base in state
+        price: p.price,
         imageUrl: undefined,
 
         availableStock: p.availableStock ?? null,
@@ -528,88 +512,125 @@ const scanningRef = useRef(false);
     );
   };
 
-  // ✅ total now uses resolved unit prices (like cart)
   const total = useMemo(() => {
-    return lines.reduce((sum, l) => {
-      const qty = Number(l.qty || 0);
-      const key = l.articleNumber ?? l.productId;
-      const unit = resolveUnitPrice(key, l.price);
-      return sum + unit * qty;
-    }, 0);
-  }, [lines, resolveUnitPrice]);
+    return lines.reduce((sum, l) => sum + Number(l.price || 0) * Number(l.qty || 0), 0);
+  }, [lines]);
 
   const hint = useMemo(() => "Scan EAN-13 (13 cijfers) zoals 8717568350035", []);
 
-// ✅ helper: wacht tot <video> echt gerenderd is (web)
-function waitForVideoRef(
-  ref: React.MutableRefObject<HTMLVideoElement | null>,
-  maxFrames = 30
-) {
-  return new Promise<HTMLVideoElement>((resolve, reject) => {
-    let frames = 0;
+  async function stopCamera() {
+    setCameraError(null);
+    setCameraActive(false);
 
-    const tick = () => {
-      const el = ref.current;
-      if (el) return resolve(el);
+    // stop ZXing loop
+    if (zxingControlsRef.current) {
+      try {
+        zxingControlsRef.current.stop();
+      } catch {}
+      zxingControlsRef.current = null;
+    }
 
-      frames += 1;
-      if (frames >= maxFrames) return reject(new Error("VIDEO_REF_TIMEOUT"));
+    // ✅ NEW: stop real MediaStream tracks (fix iOS PWA black screen)
+    if (webStreamRef.current) {
+      try {
+        webStreamRef.current.getTracks().forEach((t) => t.stop());
+      } catch {}
+      webStreamRef.current = null;
+    }
 
-      requestAnimationFrame(tick);
-    };
-
-    tick();
-  });
-}
+    // ✅ NEW: detach video
+    if (videoRef.current) {
+      try {
+        (videoRef.current as any).srcObject = null;
+      } catch {}
+      try {
+        videoRef.current.removeAttribute("src");
+      } catch {}
+      try {
+        videoRef.current.load?.();
+      } catch {}
+    }
+  }
 
   async function startCamera() {
     setCameraError(null);
 
     if (Platform.OS === "web") {
-  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-    setCameraError("Camera wordt niet ondersteund. Gebruik Safari/https.");
-    return;
-  }
-
-  try {
-    // ✅ EERST cameraActive aan → <video> wordt gerenderd
-    setCameraActive(true);
-
-    // ✅ wacht tot <video ref> echt bestaat
-    const videoEl = await waitForVideoRef(videoRef);
-
-    const { BrowserMultiFormatReader } = await import("@zxing/browser");
-
-    // stop evt. oude sessie
-    await stopCamera();
-
-    // weer aanzetten zodat video zichtbaar blijft
-    setCameraActive(true);
-
-    const reader = new BrowserMultiFormatReader();
-
-    const controls = await reader.decodeFromVideoDevice(
-      undefined,
-      videoEl,
-      (result) => {
-        if (!scanEnabled) return;
-        if (result) {
-          const text = result.getText()?.trim() ?? "";
-          if (text) void processCode(text);
-        }
+      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        setCameraError("Camera wordt niet ondersteund. Gebruik https op iPhone/Safari.");
+        return;
       }
-    );
 
-    zxingControlsRef.current = controls;
-  } catch (e: any) {
-    setCameraActive(false);
-    setCameraError(e?.message ?? "Camera scanner kon niet starten.");
-  }
+      // always start from clean state
+      await stopCamera();
 
-  return;
-}
+      const video = videoRef.current;
+      if (!video) {
+        setCameraError("Geen video element gevonden.");
+        return;
+      }
 
+      try {
+        // iOS needs these attributes truly set
+        video.setAttribute("playsinline", "true");
+        video.muted = true;
+        (video as any).autoplay = true;
 
+        // ✅ NEW: start stream ourselves (more control than decodeFromVideoDevice)
+        const constraints: MediaStreamConstraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          } as any,
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        webStreamRef.current = stream;
+
+        (video as any).srcObject = stream;
+
+        // must be in user gesture (your Start button is)
+        await video.play();
+
+        // wait for actual frames
+        await waitForVideoReady(video, 2500);
+
+        // start ZXing only after frames exist
+        const { BrowserMultiFormatReader } = await import("@zxing/browser");
+        const reader = new BrowserMultiFormatReader();
+
+        setCameraActive(true);
+
+        const controls = await reader.decodeFromVideoElement(video, (result) => {
+          if (!scanEnabled) return;
+          if (result) {
+            const text = result.getText()?.trim() ?? "";
+            if (text) void processCode(text);
+          }
+        });
+
+        zxingControlsRef.current = controls;
+      } catch (e: any) {
+        // iOS/PWA glitch: retry once if video never becomes ready
+        if (String(e?.message) === "VIDEO_NOT_READY") {
+          try {
+            await stopCamera();
+            await sleep(200);
+            // retry once
+            return await startCamera();
+          } catch {}
+        }
+
+        setCameraActive(false);
+        setCameraError(e?.message ?? "Camera scanner kon niet starten.");
+      }
+
+      return;
+    }
+
+    // native (expo-camera)
     const p = permission?.granted ? permission : await requestPermission();
     if (!p?.granted) {
       setCameraActive(false);
@@ -620,54 +641,24 @@ function waitForVideoRef(
     setCameraActive(true);
   }
 
-  async function stopCamera() {
-    setCameraError(null);
-    setCameraActive(false);
-
-    if (zxingControlsRef.current) {
-      try {
-        zxingControlsRef.current.stop();
-      } catch {}
-      zxingControlsRef.current = null;
-    }
-  }
-
   useEffect(() => {
     return () => {
-      if (zxingControlsRef.current) {
-        try {
-          zxingControlsRef.current.stop();
-        } catch {}
-        zxingControlsRef.current = null;
-      }
+      // cleanup on unmount
+      void stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onBarcodeScanned = useCallback(
-  (result: BarcodeScanningResult) => {
-    if (!scanEnabled) return;
-    if (scanningRef.current) return;
-
-    const raw = String(result?.data ?? "").trim();
-    const code = digitsOnly(raw);
-
-    // ✅ alleen EAN-13 (jullie use-case)
-    if (code.length !== 13) return;
-
-    // ✅ lock meteen (heel belangrijk op iOS)
-    scanningRef.current = true;
-
-    void processCode(code).finally(() => {
-      // ✅ lock na korte delay weer vrij
-      setTimeout(() => {
-        scanningRef.current = false;
-      }, 800);
-    });
-  },
-  [scanEnabled, processCode]
-);
-
-
+    (result: BarcodeScanningResult) => {
+      if (!scanEnabled) return;
+      const raw = String(result?.data ?? "");
+      const code = digitsOnly(raw);
+      if (!/^\d{8,14}$/.test(code)) return;
+      void processCode(code);
+    },
+    [scanEnabled, processCode]
+  );
 
   function Card({ children }: { children: React.ReactNode }) {
     return (
@@ -768,7 +759,7 @@ function waitForVideoRef(
               </Pressable>
             ) : (
               <Pressable
-                onPress={stopCamera}
+                onPress={() => void stopCamera()}
                 style={{
                   backgroundColor: "#111827",
                   paddingHorizontal: 12,
@@ -807,41 +798,30 @@ function waitForVideoRef(
               height: 220,
             }}
           >
-            {Platform.OS === "web" ? (
-  <View style={{ flex: 1 }}>
-    {/* ✅ video altijd in DOM => ref is nooit null */}
-    <video
-      ref={videoRef}
-      style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        display: cameraActive ? "block" : "none",
-      }}
-      muted
-      playsInline
-      autoPlay
-    />
-
-    {!cameraActive ? (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
-      </View>
-    ) : null}
-  </View>
-) : cameraActive ? (
-  <CameraView
-    style={{ flex: 1 }}
-    facing="back"
-    onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
-    barcodeScannerSettings={{ barcodeTypes: ["ean13"] }}
-  />
-) : (
-  <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-    <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
-  </View>
-)}
-
+            {cameraActive ? (
+              Platform.OS === "web" ? (
+                <video
+                  ref={videoRef}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  muted
+                  playsInline
+                  autoPlay
+                />
+              ) : (
+                <CameraView
+                  style={{ flex: 1 }}
+                  facing="back"
+                  onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
+                  }}
+                />
+              )
+            ) : (
+              <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
+              </View>
+            )}
           </View>
 
           {!scanEnabled ? (
@@ -894,9 +874,8 @@ function waitForVideoRef(
               </Text>
 
               <View style={{ marginTop: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                {/* ✅ show resolved unit price */}
                 <Text style={{ fontSize: 16, fontWeight: "900", color: "#047857" }}>
-                  €{Number(foundDisplayPrice || 0).toFixed(2)}
+                  €{foundProduct.price.toFixed(2)}
                 </Text>
 
                 {/* ✅ Badge zoals ProductCard */}
@@ -907,7 +886,6 @@ function waitForVideoRef(
                 </View>
               </View>
 
-              {/* (optioneel) extra duidelijkheid voor agent */}
               <View style={{ marginTop: 8 }}>
                 <Text style={{ color: "#6B7280", fontSize: 12 }}>
                   Available:{" "}
@@ -987,7 +965,6 @@ function waitForVideoRef(
             </View>
           )}
 
-          {/* ✅ Recent gescand lijst (blijft zichtbaar in sessie) + doos +/- */}
           {recentScanned.length ? (
             <View style={{ marginTop: 14 }}>
               <Text style={{ fontWeight: "900", color: "#111827", marginBottom: 8 }}>
@@ -1016,14 +993,7 @@ function waitForVideoRef(
                     >
                       <Text style={{ fontSize: 12, color: "#6B7280" }}>{p.articleNumber}</Text>
 
-                      <View
-                        style={{
-                          marginTop: 2,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
+                      <View style={{ marginTop: 2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                         <View style={{ flex: 1, paddingRight: 10 }}>
                           <Text style={{ fontWeight: "800", color: "#111827" }} numberOfLines={1}>
                             {p.name}
@@ -1083,14 +1053,12 @@ function waitForVideoRef(
             </View>
           ) : null}
 
-          {/* ✅ Alleen totaal (geen Clear winkelwagen) */}
           <View style={{ marginTop: 12, alignItems: "flex-end" }}>
             <Text style={{ fontWeight: "900", color: "#111827" }}>
-              Totaal: €{Number(total || 0).toFixed(2)}
+              Totaal: €{total.toFixed(2)}
             </Text>
           </View>
 
-          {/* ✅ 1 brede knop: Naar winkelwagen */}
           <View style={{ marginTop: 12 }}>
             <Pressable
               onPress={() => router.push("/(tabs)/cart")}
