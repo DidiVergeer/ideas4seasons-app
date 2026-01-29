@@ -796,20 +796,28 @@ function waitForVideoRef(
             </View>
           ) : null}
 
-        {Platform.OS === "web" ? (
+          <View
+            style={{
+              marginTop: 10,
+              borderRadius: 12,
+              overflow: "hidden",
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              backgroundColor: "#000",
+              height: 220,
+            }}
+          >
+            {Platform.OS === "web" ? (
   <View style={{ flex: 1 }}>
+    {/* ✅ video altijd in DOM => ref is nooit null */}
     <video
-      ref={(el) => {
-        videoRef.current = el;
+      ref={videoRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        display: cameraActive ? "block" : "none",
       }}
-      style={
-        {
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: cameraActive ? "block" : "none",
-        } as any
-      }
       muted
       playsInline
       autoPlay
@@ -834,7 +842,7 @@ function waitForVideoRef(
   </View>
 )}
 
-
+          </View>
 
           {!scanEnabled ? (
             <Pressable
