@@ -540,47 +540,75 @@ const scanningRef = useRef(false);
 
   const hint = useMemo(() => "Scan EAN-13 (13 cijfers) zoals 8717568350035", []);
 
+// ✅ helper: wacht tot <video> echt gerenderd is (web)
+function waitForVideoRef(
+  ref: React.MutableRefObject<HTMLVideoElement | null>,
+  maxFrames = 30
+) {
+  return new Promise<HTMLVideoElement>((resolve, reject) => {
+    let frames = 0;
+
+    const tick = () => {
+      const el = ref.current;
+      if (el) return resolve(el);
+
+      frames += 1;
+      if (frames >= maxFrames) return reject(new Error("VIDEO_REF_TIMEOUT"));
+
+      requestAnimationFrame(tick);
+    };
+
+    tick();
+  });
+}
+
   async function startCamera() {
     setCameraError(null);
 
     if (Platform.OS === "web") {
-      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        setCameraError("Camera wordt niet ondersteund. Gebruik https op iPhone/Safari.");
-        return;
-      }
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    setCameraError("Camera wordt niet ondersteund. Gebruik Safari/https.");
+    return;
+  }
 
-      try {
-        const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        await stopCamera();
+  try {
+    // ✅ EERST cameraActive aan → <video> wordt gerenderd
+    setCameraActive(true);
 
-        if (!videoRef.current) {
-          setCameraError("Geen video element gevonden.");
-          return;
+    // ✅ wacht tot <video ref> echt bestaat
+    const videoEl = await waitForVideoRef(videoRef);
+
+    const { BrowserMultiFormatReader } = await import("@zxing/browser");
+
+    // stop evt. oude sessie
+    await stopCamera();
+
+    // weer aanzetten zodat video zichtbaar blijft
+    setCameraActive(true);
+
+    const reader = new BrowserMultiFormatReader();
+
+    const controls = await reader.decodeFromVideoDevice(
+      undefined,
+      videoEl,
+      (result) => {
+        if (!scanEnabled) return;
+        if (result) {
+          const text = result.getText()?.trim() ?? "";
+          if (text) void processCode(text);
         }
-
-        const reader = new BrowserMultiFormatReader();
-        setCameraActive(true);
-
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
-          videoRef.current,
-          (result) => {
-            if (!scanEnabled) return;
-            if (result) {
-              const text = result.getText()?.trim() ?? "";
-              if (text) void processCode(text);
-            }
-          }
-        );
-
-        zxingControlsRef.current = controls;
-      } catch (e: any) {
-        setCameraActive(false);
-        setCameraError(e?.message ?? "Camera scanner kon niet starten.");
       }
+    );
 
-      return;
-    }
+    zxingControlsRef.current = controls;
+  } catch (e: any) {
+    setCameraActive(false);
+    setCameraError(e?.message ?? "Camera scanner kon niet starten.");
+  }
+
+  return;
+}
+
 
     const p = permission?.granted ? permission : await requestPermission();
     if (!p?.granted) {
@@ -768,41 +796,45 @@ const scanningRef = useRef(false);
             </View>
           ) : null}
 
-          <View
-            style={{
-              marginTop: 10,
-              borderRadius: 12,
-              overflow: "hidden",
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              backgroundColor: "#000",
-              height: 220,
-            }}
-          >
-            {cameraActive ? (
-              Platform.OS === "web" ? (
-                <video
-                  ref={videoRef}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  muted
-                  playsInline
-                />
-              ) : (
-                <CameraView
-                  style={{ flex: 1 }}
-                  facing="back"
-                  onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
-                  barcodeScannerSettings={{
-                    barcodeTypes: ["ean13"],
-                  }}
-                />
-              )
-            ) : (
-              <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
-              </View>
-            )}
-          </View>
+        {Platform.OS === "web" ? (
+  <View style={{ flex: 1 }}>
+    <video
+      ref={(el) => {
+        videoRef.current = el;
+      }}
+      style={
+        {
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: cameraActive ? "block" : "none",
+        } as any
+      }
+      muted
+      playsInline
+      autoPlay
+    />
+
+    {!cameraActive ? (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
+      </View>
+    ) : null}
+  </View>
+) : cameraActive ? (
+  <CameraView
+    style={{ flex: 1 }}
+    facing="back"
+    onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
+    barcodeScannerSettings={{ barcodeTypes: ["ean13"] }}
+  />
+) : (
+  <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+    <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
+  </View>
+)}
+
+
 
           {!scanEnabled ? (
             <Pressable

@@ -1,6 +1,6 @@
 import { useCameraPermissions } from "expo-camera";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 
 import ScannerScreen from "../scanner-screen";
 
@@ -19,6 +19,11 @@ export default function ScannerTabRoute() {
       return "Camera toestemming is geweigerd en iOS vraagt niet opnieuw. Zet camera-toegang aan in Instellingen.";
     return "Camera toestemming is geweigerd. Geef toestemming om te scannen.";
   }, [permission, granted, canAskAgain]);
+
+  // ✅ WEB: niet via expo-camera permissions (blijft soms null op iPad/iOS web)
+if (Platform.OS === "web") {
+  return <ScannerScreen />;
+}
 
   if (!permission) {
     return (
