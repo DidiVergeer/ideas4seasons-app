@@ -11,11 +11,11 @@ export default ({ config }) => {
   return {
     ...config,
 
-    // ❗️BELANGRIJK: UITZETTEN — voorkomt TurboModule crashes
+    // ✅ New Architecture AAN (nodig voor react-native-reanimated)
     newArchEnabled: true,
 
     // ✅ stabiel met expo-camera
-    jsEngine: "hermes",
+    jsEngine: "jsc",
 
     name: "Ideas4Seasons",
     slug: "ideas4seasons",
@@ -41,7 +41,7 @@ export default ({ config }) => {
       bundleIdentifier: "com.ideas4seasons.sales",
 
       // ❗️BUILD NUMBER OMHOOG (verplicht)
-      buildNumber: "14",
+      buildNumber: "22",
 
       supportsTablet: true,
 
