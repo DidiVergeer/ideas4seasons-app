@@ -59,6 +59,19 @@ export default ({ config }) => {
       versionCode: (config?.android?.versionCode ?? 1) + 1,
     },
 
+        web: {
+      ...(config.web || {}),
+      name: "Ideas4Seasons",
+      shortName: "I4S",
+      display: "standalone",
+      backgroundColor: "#ffffff",
+      themeColor: "#ffffff",
+      startUrl: "/",
+      scope: "/",
+      icon: "./assets/images/pwa-icon-512.png",
+    },
+
+
     extra: {
       ...(config.extra || {}),
 
