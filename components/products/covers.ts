@@ -118,7 +118,7 @@ export const CATEGORY_COVERS: Record<string, any> = {
 "led-candles:all": require("../../assets/subcategories/led-candles/all.jpg"),
 "led-candles:cannelure": require("../../assets/subcategories/led-candles/cannelure.jpg"),
 "led-candles:wood": require("../../assets/subcategories/led-candles/wood.jpg"),
-"led-candles:tracy": require("../../assets/subcategories/led-candles/tracy.jpg"),
+"led-candles:tracy": require("../../assets/subcategories/led-candles/Tracy.jpg"),
 "led-candles:wax-shape": require("../../assets/subcategories/led-candles/wax-shape.jpg"),
 "led-candles:pillar": require("../../assets/subcategories/led-candles/pillar.jpg"),
 "led-candles:pencil": require("../../assets/subcategories/led-candles/pencil.jpg"),
