@@ -235,6 +235,13 @@ export default function ScannerScreen() {
 
   // ✅ na 1 scan: scanning uit (voorkomt zwart/knipper)
   const [scanEnabled, setScanEnabled] = useState(true);
+  
+    // ✅ voorkomt “oude state” in ZXing callback (web)
+  const scanEnabledRef = useRef(true);
+  useEffect(() => {
+    scanEnabledRef.current = scanEnabled;
+  }, [scanEnabled]);
+
 
   // ✅ recent gescand (blijft zichtbaar in sessie)
   const [recentScanned, setRecentScanned] = useState<RecentScanned[]>([]);
