@@ -76,8 +76,12 @@ export default function TabLayout() {
       {/* ❌ verberg "product" als tab (routes bestaan nog steeds als files) */}
       <Tabs.Screen name="product" options={{ href: null }} />
 
-      {/* ❌ verberg "customers" subroutes als tab: NIET expliciet opnemen */}
-      {/* (customers/index en customers/[id] worden via de folder-route afgehandeld) */}
+      {/* ✅ HARD FIX: verberg eventuele "oude" disabled routes (cache/oude build) */}
+      <Tabs.Screen name="customers.disabled" options={{ href: null }} />
+      <Tabs.Screen name="_customers.disabled" options={{ href: null }} />
+
+      {/* (optioneel) als debug ooit zichtbaar wordt in tabbar: */}
+      <Tabs.Screen name="debug" options={{ href: null }} />
     </Tabs>
   );
 }
