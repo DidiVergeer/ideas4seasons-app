@@ -39,6 +39,7 @@ export default ({ config }) => {
     ios: {
       ...(config.ios || {}),
       bundleIdentifier: "com.ideas4seasons.sales",
+      icon: "./assets/images/apple-touch-icon.png",
 
       // ❗️BUILD NUMBER OMHOOG (verplicht)
       buildNumber: "22",
@@ -52,6 +53,7 @@ export default ({ config }) => {
           "We gebruiken de camera om barcodes te scannen tijdens het maken van orders.",
       },
     },
+    
 
     android: {
       ...(config.android || {}),
@@ -61,7 +63,7 @@ export default ({ config }) => {
 
         web: {
       ...(config.web || {}),
-      name: "Ideas4Seasons",
+      name: "Ideas4seasons",
       shortName: "I4S",
       display: "standalone",
       backgroundColor: "#ffffff",
