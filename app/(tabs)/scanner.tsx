@@ -507,50 +507,74 @@ export default function ScannerScreen() {
   async function startCamera() {
     setCameraError(null);
 
-      if (Platform.OS === "web") {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Camera wordt niet ondersteund. Gebruik https op iPhone/Safari.");
+     if (Platform.OS === "web") {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    setCameraError("Camera wordt niet ondersteund. Gebruik https op iPhone/Safari.");
+    return;
+  }
+
+  try {
+    // ✅ Stop eerst oude stream/controls
+    await stopCamera();
+
+    // ✅ eerst aanzetten zodat <video> zeker in DOM staat
+    setCameraActive(true);
+
+    // ✅ 1 tick wachten zodat React de DOM rendert
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+    if (!videoRef.current) {
+      setCameraActive(false);
+      setCameraError("Geen video element gevonden.");
       return;
     }
 
-    try {
-      const { BrowserMultiFormatReader } = await import("@zxing/browser");
-      await stopCamera();
+    // ✅ ZXing imports (hints via @zxing/library voor compatibiliteit)
+    const { BrowserMultiFormatReader, BarcodeFormat } = await import("@zxing/browser");
+    const { DecodeHintType } = await import("@zxing/library");
 
-      // ✅ eerst aanzetten zodat <video> zeker in DOM staat
-      setCameraActive(true);
+    // ✅ alleen EAN/UPC → sneller en betrouwbaarder (zeker op iPhone/PWA)
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+    ]);
 
-      // ✅ 1 tick wachten zodat React de DOM render
-      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const reader = new BrowserMultiFormatReader(hints,);
 
-      if (!videoRef.current) {
-        setCameraActive(false);
-        setCameraError("Geen video element gevonden.");
-        return;
-      }
-
-      const reader = new BrowserMultiFormatReader();
-
-      const controls = await reader.decodeFromVideoDevice(
-        undefined,
-        videoRef.current,
-        (result) => {
-          if (!scanEnabled) return;
-          if (result) {
-            const text = result.getText()?.trim() ?? "";
-            if (text) void processCode(text);
-          }
+    // ✅ force back camera + hogere resolutie (belangrijk op iPhone)
+    const controls = await reader.decodeFromConstraints(
+      {
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      },
+      videoRef.current,
+      (result) => {
+        if (!scanEnabledRef.current) return;
+        if (result) {
+          const text = result.getText()?.trim() ?? "";
+          // ✅ debug (laat tijdelijk aan om te bewijzen dat ie decodeert)
+          console.log("ZXING HIT:", text);
+          if (text) void processCode(text);
         }
-      );
+      }
+    );
 
-      zxingControlsRef.current = controls;
-    } catch (e: any) {
-      setCameraActive(false);
-      setCameraError(e?.message ?? "Camera scanner kon niet starten.");
-    }
-
-    return;
+    zxingControlsRef.current = controls;
+  } catch (e: any) {
+    setCameraActive(false);
+    setCameraError(e?.message ?? "Camera scanner kon niet starten.");
   }
+
+  return;
+}
+   
 
     const p = permission?.granted ? permission : await requestPermission();
     if (!p?.granted) {
