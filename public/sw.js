@@ -1,14 +1,13 @@
 // public/sw.js
-const CACHE = "i4s-shell-v2";
+const CACHE = "i4s-shell-v3";
 
-// bestanden die we sowieso willen hebben voor "app opent altijd"
 const CORE_ASSETS = [
-  "/", // start url
+  "/",
   "/index.html",
   "/manifest.json",
-  "/offline.html",
 ];
 
+// install: app shell cachen
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(CORE_ASSETS))
@@ -16,52 +15,55 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
+// activate: oude caches opruimen
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      // opruimen oude caches
       const keys = await caches.keys();
       await Promise.all(
         keys
           .filter((k) => k.startsWith("i4s-shell-") && k !== CACHE)
           .map((k) => caches.delete(k))
       );
-
       await self.clients.claim();
     })()
   );
 });
 
-// Network-first voor navigations (zodat online altijd wint, offline fallback)
+// fetch
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
-  // Alleen GET
   if (req.method !== "GET") return;
 
-  // Navigations: probeer netwerk, fallback naar offline.html (nooit dino/zwart)
+  // 🚨 BELANGRIJKSTE REGEL:
+  // elke navigation → index.html (ook offline)
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req).catch(() => caches.match("/offline.html"))
+      fetch(req).catch(() => caches.match("/index.html"))
     );
     return;
   }
 
-  // Assets + overige GET: cache-first met runtime caching
+  // Expo static assets → cache-first
+  if (req.url.includes("/_expo/static/")) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        return (
+          cached ||
+          fetch(req).then((res) => {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(req, copy));
+            return res;
+          })
+        );
+      })
+    );
+    return;
+  }
+
+  // overige requests
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(req)
-        .then((res) => {
-          // alleen succesvolle responses cachen
-          if (!res || res.status !== 200) return res;
-
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
-          return res;
-        })
-        .catch(() => cached);
-    })
+    caches.match(req).then((cached) => cached || fetch(req))
   );
 });
