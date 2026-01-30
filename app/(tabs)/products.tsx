@@ -31,6 +31,7 @@ import CategoryTile from "../../components/products/CategoryTile";
 import ProductCard from "../../components/products/ProductCard";
 import SubcategoryTile from "../../components/products/SubcategoryTile";
 import { getSubcategoryCover } from "../../components/products/covers";
+import { getCache, setCache } from "../lib/offlineCache";
 
 import type { Category, Product, Subcategory } from "../../components/products/catalog";
 import { mapAfasRowToProduct } from "../../components/products/catalog";
@@ -81,6 +82,12 @@ export default function ProductsScreen() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [dataBugs, setDataBugs] = useState<string[]>([]);
 
+  const PRODUCTS_CACHE_KEY = "i4s_cache_products_v1";
+
+const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
+  savedAt?: string;
+} | null>(null);
+
   // Search (alleen in products step)
   const [query, setQuery] = useState<string>("");
   const [debouncedQuery, setDebouncedQuery] = useState<string>("");
@@ -110,7 +117,7 @@ export default function ProductsScreen() {
         { id: "pottery", name: "Pottery" },
         { id: "aroma", name: "Aroma" },
         { id: "candles", name: "Candles" },
-        { id: "led-candles", name: "LED candles" },
+        { id: "led-candle", name: "LED candles" },
         { id: "gift-box", name: "Gift box" },
         { id: "various", name: "Various" },
         { id: "sale", name: "Sale" },
@@ -254,51 +261,73 @@ export default function ProductsScreen() {
   }, [selectedCategoryId, selectedSubcategoryId, subcategoriesByCategory]);
 
   useEffect(() => {
-    let cancelled = false;
+  let cancelled = false;
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setDataBugs([]);
+  (async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setDataBugs([]);
+      setOfflineProductsInfo(null);
 
-        const ok: Product[] = [];
-        const bad: string[] = [];
+      const ok: Product[] = [];
+      const bad: string[] = [];
 
-        const rows = await getAllProducts();
+      // 1) Probeer online (API)
+      const rows = await getAllProducts();
 
-        for (const r of rows) {
-          try {
-            const mapped = mapAfasRowToProduct(r as any);
+      for (const r of rows) {
+        try {
+          const mapped = mapAfasRowToProduct(r as any);
 
-            // ✅ BELANGRIJK: mapped wint, anders raak je categoryId/subcategoryId kwijt
-            ok.push({ ...(r as any), ...(mapped as any) } as any);
-          } catch {
-            bad.push(String((r as any)?.itemcode ?? "?"));
-          }
+          // ✅ BELANGRIJK: mapped wint, anders raak je categoryId/subcategoryId kwijt
+          ok.push({ ...(r as any), ...(mapped as any) } as any);
+        } catch {
+          bad.push(String((r as any)?.itemcode ?? "?"));
         }
+      }
 
-        if (cancelled) return;
+      if (cancelled) return;
 
-        setAllProducts(ok);
-        setDataBugs(bad);
+      setAllProducts(ok);
+      setDataBugs(bad);
+
+      // 2) Sla succesvolle resultaat op in cache
+      await setCache(PRODUCTS_CACHE_KEY, { products: ok, dataBugs: bad });
+
+      if (!selectedCategoryId) setSelectedCategoryId("all");
+      if (!selectedSubcategoryId) setSelectedSubcategoryId("all");
+    } catch (e: any) {
+      // 3) Online faalt -> probeer cache
+      const cached = await getCache<{ products: Product[]; dataBugs: string[] }>(PRODUCTS_CACHE_KEY);
+
+      if (cancelled) return;
+
+      if (cached?.data?.products?.length) {
+        setAllProducts(cached.data.products);
+        setDataBugs(Array.isArray(cached.data.dataBugs) ? cached.data.dataBugs : []);
+        setOfflineProductsInfo({ savedAt: cached.savedAt });
 
         if (!selectedCategoryId) setSelectedCategoryId("all");
         if (!selectedSubcategoryId) setSelectedSubcategoryId("all");
-      } catch (e: any) {
-        if (cancelled) return;
-        setError(e?.message ?? "Failed to load products");
-      } finally {
-        if (cancelled) return;
-        setLoading(false);
-      }
-    })();
 
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+        // Geen error tonen als we uit cache kunnen laden
+        setError(null);
+      } else {
+        // Geen cache -> echte error
+        setError(e?.message ?? "Failed to load products");
+      }
+    } finally {
+      if (cancelled) return;
+      setLoading(false);
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const baseProducts = useMemo(() => {
     if (!selectedCategoryId || !selectedSubcategoryId) return [];
