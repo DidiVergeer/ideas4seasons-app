@@ -571,27 +571,46 @@ export default function ScannerScreen() {
                 }}
               >
                 {recentScanned.map((p, idx) => {
-                  const isLast = idx === recentScanned.length - 1;
-                  return (
-                    <View
-                      key={p.id}
-                      style={{
-                        paddingVertical: 10,
-                        paddingHorizontal: 12,
-                        borderBottomWidth: isLast ? 0 : 1,
-                        borderBottomColor: "#E5E7EB",
-                        backgroundColor: "white",
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                        {p.articleNumber}
-                      </Text>
-                      <Text style={{ fontWeight: "800", color: "#111827" }}>
-                        {p.name}
-                      </Text>
-                    </View>
-                  );
-                })}
+  const isLast = idx === recentScanned.length - 1;
+
+  // ✅ nieuw: hoeveel zit er al in de order?
+  const qty = getQty(p.id) || 0;
+
+  return (
+    <View
+      key={p.id}
+      style={{
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: "#E5E7EB",
+        backgroundColor: "white",
+      }}
+    >
+      <Text style={{ fontSize: 12, color: "#6B7280" }}>{p.articleNumber}</Text>
+
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Text style={{ fontWeight: "800", color: "#111827", flex: 1, paddingRight: 10 }}>
+          {p.name}
+        </Text>
+
+        {/* ✅ nieuw: qty badge */}
+        <View
+          style={{
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 999,
+            backgroundColor: "#F3F4F6",
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+          }}
+        >
+          <Text style={{ fontWeight: "900", color: "#111827" }}>{qty}</Text>
+        </View>
+      </View>
+    </View>
+  );
+})}
               </View>
             </View>
           ) : null}
