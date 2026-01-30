@@ -27,6 +27,7 @@ import type { Product } from "../../../components/products/catalog";
 import { mapAfasRowToProduct } from "../../../components/products/catalog";
 import ProductAccordion from "../../../components/products/ProductAccordion";
 import { getProductByItemcode, getProducts } from "../../api/products";
+import { getCache } from "../../lib/offlineCache";
 
 const BRAND_GREEN = "#16A34A";
 
@@ -310,6 +311,44 @@ const carouselStyles = StyleSheet.create({
    Screen
    ========================= */
 
+   const PRODUCTS_CACHE_KEY = "i4s_cache_products_v1";
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label = "timeout"): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(label)), ms);
+    promise
+      .then((v) => {
+        clearTimeout(t);
+        resolve(v);
+      })
+      .catch((e) => {
+        clearTimeout(t);
+        reject(e);
+      });
+  });
+}
+
+function findInCachedProducts(cache: any, itemcode: string) {
+  const list: any[] = cache?.data?.products ?? cache?.products ?? [];
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  const target = String(itemcode ?? "").trim();
+  if (!target) return null;
+
+  return (
+    list.find((p: any) => {
+      const pid = pickFirstString(
+        p?.id,
+        p?.articleNumber,
+        p?.itemcode,
+        p?.ItemCode,
+        p?.ARTICLECODE
+      );
+      return String(pid ?? "").trim() === target;
+    }) ?? null
+  );
+}
+
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -333,7 +372,7 @@ export default function ProductDetail() {
         if (!itemcode) throw new Error("Product not found");
 
         // 1) detail endpoint
-        const row = await getProductByItemcode(itemcode);
+        const row = await withTimeout(getProductByItemcode(itemcode), 4000, "offline-or-timeout");
 
         if (row) {
           const p = mapAfasRowToProduct(row as any);
@@ -383,8 +422,23 @@ export default function ProductDetail() {
         const merged = { ...(found as any), ...(foundRow as any) };
         if (alive) setProduct(merged as any);
       } catch (e: any) {
-        if (alive) setError(e?.message ?? "Failed to load product");
-      }
+  try {
+    // ✅ OFFLINE FALLBACK: pak uit cached products
+    const cached = await getCache<{ products: any[]; dataBugs: string[] }>(PRODUCTS_CACHE_KEY);
+    const cachedProduct = findInCachedProducts(cached, itemcode);
+
+    if (alive && cachedProduct) {
+      // we hebben al gemapte producten in cache (uit products.tsx)
+      setError(null);
+      setProduct(cachedProduct as any);
+      return;
+    }
+  } catch {
+    // ignore cache errors
+  }
+
+  if (alive) setError(e?.message ?? "Failed to load product");
+}
     })();
 
     return () => {
