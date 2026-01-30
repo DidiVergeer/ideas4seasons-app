@@ -11,7 +11,7 @@ import {
   type BarcodeScanningResult,
 } from "expo-camera";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useCart } from "../../components/cart/CartProvider";
 
@@ -611,16 +611,16 @@ export default function ScannerScreen() {
     setCameraActive(false);
   }
 
-  const onBarcodeScanned = useCallback(
-    (result: BarcodeScanningResult) => {
-      if (!scanEnabled) return;
-      const raw = String(result?.data ?? "");
-      const code = digitsOnly(raw);
-      if (!/^\d{8,14}$/.test(code)) return;
-      void processCode(code);
-    },
-    [scanEnabled] // processCode is stable enough here (declared in component)
-  );
+  const onBarcodeScanned = (result: BarcodeScanningResult) => {
+  console.log("BARCODE EVENT FIRED", result?.type, result?.data);
+  showToast("BARCODE EVENT");
+  if (!scanEnabled) return;
+  const raw = String(result?.data ?? "");
+  const code = digitsOnly(raw);
+  if (!/^\d{8,14}$/.test(code)) return;
+  void processCode(code);
+};
+
 
   function Card({ children }: { children: React.ReactNode }) {
     return (
