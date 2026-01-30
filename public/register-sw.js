@@ -1,22 +1,36 @@
-// app/+html.tsx
-import { Head, Html, Main, NextScript } from "expo-router/html";
+// public/register-sw.js
+(() => {
+  if (!("serviceWorker" in navigator)) return;
 
-export default function RootHtml() {
-  return (
-    <Html lang="nl">
-      <Head>
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png" />
-        <meta name="format-detection" content="telephone=no" />
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js");
 
-        {/* ✅ Service worker registreren bij cold start */}
-        <script src="/register-sw.js" defer></script>
-      </Head>
+      // Als er al een SW klaarstaat -> activeer meteen
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
 
-      <body>
-        <Main />
-        <NextScript />
-      </body>
-    </Html>
-  );
-}
+      // Als er een nieuwe SW binnenkomt -> activeer meteen
+      reg.addEventListener("updatefound", () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "installed" && navigator.serviceWorker.controller) {
+            sw.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
+
+      // Zodra controller wisselt -> reload, zodat vanaf dan alles “onder SW” valt
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
+    } catch {
+      // no-op
+    }
+  });
+})();
