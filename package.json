@@ -3,17 +3,19 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "lint": "expo lint",
+  "start": "expo start",
+  "reset-project": "node ./scripts/reset-project.js",
+  "android": "expo run:android",
+  "ios": "expo run:ios",
+  "web": "expo start --web",
+  "lint": "expo lint",
 
-    "export:web": "expo export --platform web",
-    "workbox:sw": "workbox generateSW workbox-config.cjs",
-    "build:web": "npm run export:web && npm run workbox:sw"
-  },
+  "export:web": "npx expo export --platform web",
+  "workbox:sw": "npx workbox-cli generateSW workbox-config.cjs",
+
+  "build:web": "npm run export:web && npm run workbox:sw",
+  "build": "npm run build:web"
+},
   "dependencies": {
     "@ericblade/quagga2": "^1.12.1",
     "@expo/vector-icons": "^15.0.3",
