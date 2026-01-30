@@ -1,9 +1,9 @@
 // app/(tabs)/scanner.tsx
 // ✅ FULL FILE — only necessary changes:
-// - Use Expo CameraView for BOTH web (PWA) + native (no ZXing/video)
-// - Fix stale-closure risk by NOT using useCallback([]) for processCode
-// - Keep scanning enabled (no auto-pause after 1 scan)
-// - Add offline scan queue (localStorage) + auto-sync when online
+// - Keep Expo CameraView for native
+// - For web/PWA: use Expo onBarcodeScanned ONLY if BarcodeDetector exists
+// - Otherwise fallback to @zxing/browser (video-based) so scans fire again
+// - Keep your existing product lookup + offline queue logic intact
 
 import {
   CameraView,
@@ -219,7 +219,6 @@ type BadgeVariant = "in" | "expected" | "out";
 function isWebOnline(): boolean {
   if (Platform.OS !== "web") return true;
   if (typeof navigator === "undefined") return true;
-  // navigator.onLine is not perfect, but good enough for queue decision
   return navigator.onLine !== false;
 }
 
@@ -239,6 +238,13 @@ function saveOfflineQueue(q: string[]) {
   try {
     localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
   } catch {}
+}
+
+// ✅ detect BarcodeDetector support (cruciaal voor Expo web scanning)
+function hasBarcodeDetector(): boolean {
+  if (Platform.OS !== "web") return false;
+  if (typeof window === "undefined") return false;
+  return "BarcodeDetector" in window;
 }
 
 export default function ScannerScreen() {
@@ -263,7 +269,7 @@ export default function ScannerScreen() {
   const [foundProduct, setFoundProduct] = useState<FoundProduct | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ keep scanning on; you can still toggle if you want
+  // ✅ keep scanning on
   const [scanEnabled, setScanEnabled] = useState(true);
 
   // ✅ recent gescand (blijft zichtbaar in sessie)
@@ -316,7 +322,40 @@ export default function ScannerScreen() {
     setOfflineCount(loadOfflineQueue().length);
   };
 
-  // ✅ Online processing (fetch → build product → setFoundProduct → recent → toast)
+  // ✅ Bluetooth / toetsenbord scanner (werkt ook zonder scanner)
+useEffect(() => {
+  let buffer = "";
+  let lastKeyTime = 0;
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const now = Date.now();
+
+    // reset buffer als er "normaal" getypt wordt
+    if (now - lastKeyTime > 300) {
+      buffer = "";
+    }
+    lastKeyTime = now;
+
+    // Enter = einde barcode
+    if (e.key === "Enter") {
+      if (buffer.length >= 8) {
+        void processCode(buffer);
+      }
+      buffer = "";
+      return;
+    }
+
+    // alleen cijfers accepteren
+    if (/^\d$/.test(e.key)) {
+      buffer += e.key;
+    }
+  };
+
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}, []);
+
+  // ✅ Online processing
   const processOnlineCode = async (code: string) => {
     setLastScanned(code);
     setError(null);
@@ -324,7 +363,7 @@ export default function ScannerScreen() {
     try {
       let row: any | null = null;
 
-      // ✅ 1) FAST endpoint (beurs-proof)
+      // ✅ 1) FAST endpoint
       try {
         row = await getProductByEanFast(code);
       } catch {
@@ -376,7 +415,7 @@ export default function ScannerScreen() {
     }
   };
 
-  // ✅ Main entry: accepts raw scan, queues offline on web, otherwise processes online
+  // ✅ Main entry
   const processCode = async (raw: string) => {
     const code = digitsOnly(raw);
     if (!code) return;
@@ -401,7 +440,6 @@ export default function ScannerScreen() {
       return;
     }
 
-    // ✅ Online: normal flow
     await processOnlineCode(code);
   };
 
@@ -420,13 +458,11 @@ export default function ScannerScreen() {
       return;
     }
 
-    // clear first to prevent infinite loops if fetch fails mid-way
     saveOfflineQueue([]);
     refreshOfflineCount();
 
     showToast(`Sync: ${q.length} scan(s)`);
     for (const code of q) {
-      // For queued items we still apply cooldown (prevents double add)
       if (!acceptWithCooldown(code)) continue;
       await processOnlineCode(code);
     }
@@ -439,7 +475,6 @@ export default function ScannerScreen() {
 
     const onOnline = () => {
       refreshOfflineCount();
-      // auto sync when we regain internet (beurs-friendly)
       void syncOfflineQueue();
     };
     const onOffline = () => refreshOfflineCount();
@@ -447,7 +482,6 @@ export default function ScannerScreen() {
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
 
-    // initial
     refreshOfflineCount();
 
     return () => {
@@ -466,11 +500,10 @@ export default function ScannerScreen() {
 
   const cartons = hasValidStep ? Math.floor(foundQty / stepUnits) : 0;
 
-  // ✅ BELANGRIJK: ook "Not in stock" mag je toevoegen → dus niet blokkeren op voorraad
   const canInc = !!foundProduct && hasValidStep;
   const canDec = !!foundProduct && hasValidStep && foundQty >= stepUnits;
 
-  // ✅ Badge logic exact zoals ProductCard
+  // ✅ Badge logic
   const badge = useMemo(() => {
     const availableStock = foundProduct?.availableStock;
     const onOrderQty = foundProduct?.onOrderQty;
@@ -516,7 +549,6 @@ export default function ScannerScreen() {
       price: foundProduct.price,
       imageUrl: foundProduct.imageUrl,
 
-      // (optioneel) handig als cart later ook badge wil tonen
       availableStock: foundProduct.availableStock,
       onOrder: foundProduct.onOrderQty,
       arrivalDate: foundProduct.arrivalDate,
@@ -539,7 +571,6 @@ export default function ScannerScreen() {
     addItem(payload as any, -stepUnits);
   };
 
-  // ✅ +/- per doos vanuit Recent gescand
   const incRecent = (p: RecentScanned) => {
     const step = Number(p.outerCartonQty || 0);
     if (!Number.isFinite(step) || step <= 0) return;
@@ -596,13 +627,19 @@ export default function ScannerScreen() {
   async function startCamera() {
     setCameraError(null);
 
-    const p = permission?.granted ? permission : await requestPermission();
-    if (!p?.granted) {
-      setCameraActive(false);
-      setCameraError("Geen camera-permissie. Sta camera toe in instellingen.");
+    // ✅ Native: use expo permissions
+    if (Platform.OS !== "web") {
+      const p = permission?.granted ? permission : await requestPermission();
+      if (!p?.granted) {
+        setCameraActive(false);
+        setCameraError("Geen camera-permissie. Sta camera toe in instellingen.");
+        return;
+      }
+      setCameraActive(true);
       return;
     }
 
+    // ✅ Web: camera view/video will request permission when starting stream
     setCameraActive(true);
   }
 
@@ -611,16 +648,89 @@ export default function ScannerScreen() {
     setCameraActive(false);
   }
 
+  // ✅ Expo scan callback (native + web only when BarcodeDetector exists)
   const onBarcodeScanned = (result: BarcodeScanningResult) => {
-  console.log("BARCODE EVENT FIRED", result?.type, result?.data);
-  showToast("BARCODE EVENT");
-  if (!scanEnabled) return;
-  const raw = String(result?.data ?? "");
-  const code = digitsOnly(raw);
-  if (!/^\d{8,14}$/.test(code)) return;
-  void processCode(code);
-};
+    if (!scanEnabled) return;
+    const raw = String(result?.data ?? "");
+    const code = digitsOnly(raw);
+    if (!/^\d{8,14}$/.test(code)) return;
+    void processCode(code);
+  };
 
+  // -------------------------
+  // ✅ ZXing fallback for web
+  // -------------------------
+  const videoRef = useRef<any>(null);
+  const zxingControlsRef = useRef<any>(null);
+
+  const webUsesExpoDetector = Platform.OS === "web" && hasBarcodeDetector();
+  const webNeedsZxing = Platform.OS === "web" && !hasBarcodeDetector();
+
+  useEffect(() => {
+    // Only start ZXing on web when cameraActive + scanning enabled
+    if (!webNeedsZxing) return;
+    if (!cameraActive) return;
+    if (!scanEnabled) return;
+
+    let cancelled = false;
+
+    const startZxing = async () => {
+      try {
+        // dynamic import (so native bundle doesn't care)
+        const mod = await import("@zxing/browser");
+        const { BrowserMultiFormatReader } = mod;
+
+        if (cancelled) return;
+        if (!videoRef.current) return;
+
+        const reader = new BrowserMultiFormatReader();
+
+        // decodeFromConstraints returns controls with stop()
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" } } },
+          videoRef.current,
+          (result: any, err: any) => {
+            if (cancelled) return;
+            if (!scanEnabled) return;
+
+            if (result) {
+              const text =
+                typeof result.getText === "function" ? result.getText() : String(result);
+              const code = digitsOnly(text);
+              if (!/^\d{8,14}$/.test(code)) return;
+              void processCode(code);
+            }
+          }
+        );
+
+        zxingControlsRef.current = controls;
+      } catch (e: any) {
+        setCameraError(
+          `Web scan fallback faalt. Controleer @zxing/browser install. (${e?.message ?? "unknown"})`
+        );
+      }
+    };
+
+    void startZxing();
+
+    return () => {
+      cancelled = true;
+      try {
+        // stop ZXing
+        if (zxingControlsRef.current?.stop) zxingControlsRef.current.stop();
+      } catch {}
+      zxingControlsRef.current = null;
+
+      // stop camera stream tracks
+      try {
+        const v = videoRef.current;
+        const stream = v?.srcObject as MediaStream | null;
+        stream?.getTracks?.().forEach((t) => t.stop());
+        if (v) v.srcObject = null;
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive, scanEnabled, webNeedsZxing]);
 
   function Card({ children }: { children: React.ReactNode }) {
     return (
@@ -689,12 +799,15 @@ export default function ScannerScreen() {
                 {hint}
               </Text>
 
-              {/* ✅ Offline indicator (web/PWA) */}
               {Platform.OS === "web" ? (
                 <Text style={{ marginTop: 6, fontSize: 12, color: "#6B7280" }}>
                   Status:{" "}
                   <Text style={{ fontWeight: "900", color: isWebOnline() ? "#047857" : "#B91C1C" }}>
                     {isWebOnline() ? "Online" : "Offline"}
+                  </Text>
+                  {"  "}• Web scan:{" "}
+                  <Text style={{ fontWeight: "900", color: "#111827" }}>
+                    {webUsesExpoDetector ? "Expo(BarcodeDetector)" : "ZXing fallback"}
                   </Text>
                   {offlineCount ? (
                     <>
@@ -749,7 +862,6 @@ export default function ScannerScreen() {
             )}
           </View>
 
-          {/* ✅ Manual sync button (web) */}
           {Platform.OS === "web" && offlineCount > 0 ? (
             <Pressable
               onPress={() => void syncOfflineQueue()}
@@ -797,14 +909,29 @@ export default function ScannerScreen() {
             }}
           >
             {cameraActive ? (
-              <CameraView
-                style={{ flex: 1 }}
-                facing="back"
-                onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
-                barcodeScannerSettings={{
-                  barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
-                }}
-              />
+              Platform.OS === "web" && webNeedsZxing ? (
+                // ✅ Web fallback video for ZXing
+                <View style={{ flex: 1 }}>
+                  {/* @ts-ignore - DOM element only on web */}
+                  <video
+                    ref={(el : any) => (videoRef.current = el)}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    muted
+                    playsInline
+                    autoPlay
+                  />
+                </View>
+              ) : (
+                // ✅ Native + web when BarcodeDetector exists
+                <CameraView
+                  style={{ flex: 1 }}
+                  facing="back"
+                  onBarcodeScanned={scanEnabled ? onBarcodeScanned : undefined}
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
+                  }}
+                />
+              )
             ) : (
               <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ color: "#9CA3AF" }}>Camera staat uit</Text>
@@ -866,7 +993,6 @@ export default function ScannerScreen() {
                   €{foundProduct.price.toFixed(2)}
                 </Text>
 
-                {/* ✅ Badge zoals ProductCard */}
                 <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, ...(badge.bg as any) }}>
                   <Text style={{ fontSize: 12, fontWeight: "800", ...(badge.color as any) }}>
                     {badge.text}
@@ -874,7 +1000,6 @@ export default function ScannerScreen() {
                 </View>
               </View>
 
-              {/* (optioneel) extra duidelijkheid voor agent */}
               <View style={{ marginTop: 8 }}>
                 <Text style={{ color: "#6B7280", fontSize: 12 }}>
                   Available:{" "}
@@ -954,7 +1079,6 @@ export default function ScannerScreen() {
             </View>
           )}
 
-          {/* ✅ Recent gescand lijst (blijft zichtbaar in sessie) + doos +/- */}
           {recentScanned.length ? (
             <View style={{ marginTop: 14 }}>
               <Text style={{ fontWeight: "900", color: "#111827", marginBottom: 8 }}>
@@ -1050,14 +1174,12 @@ export default function ScannerScreen() {
             </View>
           ) : null}
 
-          {/* ✅ Alleen totaal (geen Clear winkelwagen) */}
           <View style={{ marginTop: 12, alignItems: "flex-end" }}>
             <Text style={{ fontWeight: "900", color: "#111827" }}>
               Totaal: €{total.toFixed(2)}
             </Text>
           </View>
 
-          {/* ✅ 1 brede knop: Naar winkelwagen */}
           <View style={{ marginTop: 12 }}>
             <Pressable
               onPress={() => router.push("/(tabs)/cart")}
