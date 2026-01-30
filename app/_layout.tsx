@@ -13,17 +13,16 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-    useEffect(() => {
+      useEffect(() => {
     if (Platform.OS !== "web") return;
+    if (!("serviceWorker" in navigator)) return;
 
-    try {
-      const s = document.createElement("script");
-      s.src = "/register-sw.js";
-      s.async = true;
-      document.body.appendChild(s);
-    } catch {
-      // noop
-    }
+    const onLoad = () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    };
+
+    window.addEventListener("load", onLoad);
+    return () => window.removeEventListener("load", onLoad);
   }, []);
   return (
     <>
