@@ -668,22 +668,33 @@ function inferCandlesSubcategory(r: AfasProductRow) {
 
 function inferLedCandleSubcategory(r: AfasProductRow) {
   const { c2, c5 } = getCategoryFields(r);
+  const c2n = normCat(c2 || "");
+
+// Match alles wat eindigt op het stuk NA ">"
+function c2RightIs(right: string) {
+  const rn = normCat(right);
+  // werkt voor: "candle> X", "Candles> X", "led candle> X", "led candles> X"
+  return c2n.endsWith(" > " + rn) || c2n === rn;
+}
 
   const item = normalizeItemcodeDigits((r as any)?.itemcode);
   if (LED_CHARGEABLE.has(String(item))) return { subId: "chargeable", subName: "Chargeable" };
 
   if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
 
-  if (containsText(c2 || "", "cannelure")) {
+  if (c2RightIs("cannelure")) {
   return { subId: "cannelure", subName: "Cannelure" };
 }
-  if (containsText(c2 || "", "wood candle") || containsText(c2 || "", "led candle > wood")) {
+
+if (c2RightIs("wood candle")) {
   return { subId: "wood", subName: "Wood" };
 }
-  if (containsText(c2 || "", "led candle tracy") || containsText(c2 || "", "tracy")) {
+
+if (c2RightIs("led candle tracy")) {
   return { subId: "tracy", subName: "Tracy" };
 }
-  if (containsText(c2 || "", "wax shape") || containsText(c2 || "", "led wax shape")) {
+
+if (c2RightIs("led wax shape") || c2RightIs("wax shape")) {
   return { subId: "wax-shape", subName: "Wax shape" };
 }
   if (containsText(c2 || "", "pillar")) return { subId: "pillar", subName: "Pillar" };
@@ -727,8 +738,7 @@ function isVasesGlassBucket(r: AfasProductRow): boolean {
    Category mapping (Category 1 + special rules)
    ========================================================= */
 
-   
-
+  
 function inferCategoryFromRow(r: AfasProductRow): {
   catId: string;
   catName: string;
