@@ -172,22 +172,16 @@ const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
       pottery: [
   { id: "new", name: "New", categoryId: "pottery" },
   { id: "all", name: "Alle artikelen", categoryId: "pottery" },
-
   { id: "houses", name: "Houses", categoryId: "pottery" },
   { id: "glasses", name: "Pot with glasses", categoryId: "pottery" },
   { id: "wood", name: "Pot with wood legs", categoryId: "pottery" },
   { id: "palma", name: "Palma & Ibiza pot", categoryId: "pottery" },
-
   { id: "rise", name: "Bubbles & Rise pot", categoryId: "pottery" },
   { id: "chubby", name: "Pouff & Chubby pot", categoryId: "pottery" },
-
   { id: "walk", name: "Shiny glaze head", categoryId: "pottery" },
-
   { id: "carre", name: "Bricks & Carre pot", categoryId: "pottery" },
   { id: "daydream", name: "Line & Daydream pot", categoryId: "pottery" },
-
   { id: "hanoi", name: "Hanoi, Marble & Wave pot", categoryId: "pottery" },
-
   { id: "diverse", name: "Diverse", categoryId: "pottery" },
 ],
 
@@ -233,11 +227,14 @@ const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
 
       "gift-box": [{ id: "all", name: "Alle artikelen", categoryId: "gift-box" }],
       various: [
-        { id: "all", name: "Alle artikelen", categoryId: "various" },
-        { id: "accessories", name: "Accessories", categoryId: "various" },
-        { id: "decor", name: "Decor", categoryId: "various" },
-        { id: "other", name: "Other", categoryId: "various" },
-      ],
+  { id: "all", name: "All", categoryId: "various" },
+  { id: "floral", name: "Floral", categoryId: "various" },
+  { id: "foam-flowers", name: "Foam Flowers", categoryId: "various" },
+  { id: "dried-flowers", name: "Dried Flowers", categoryId: "various" },
+  { id: "water-pearls-snow", name: "Water pearls & Snow", categoryId: "various" },
+  { id: "ice-moulds", name: "Ice moulds", categoryId: "various" },
+  { id: "wood", name: "Wood", categoryId: "various" },
+],
       sale: [{ id: "all", name: "Alle artikelen", categoryId: "sale" }],
       terrarium: [{ id: "all", name: "Alle artikelen", categoryId: "terrarium" }],
     }),

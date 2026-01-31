@@ -789,6 +789,35 @@ console.log("POTTERY_MAP", r.itemcode, { c2, c5 });
   return { subId: "all", subName: "Alle artikelen" };
 }
 
+function inferVariousSubcategory(r: AfasProductRow) {
+  const { c2 } = getCategoryFields(r);
+  const c2n = normCat(c2 || "");
+
+  // Floral
+  if (equalsText(c2n, "diverse > floral")) return { subId: "floral", subName: "Floral" };
+
+  // Foam Flowers (AFAS: "Foam flowers")
+  if (containsText(c2n, "foam flowers") || equalsText(c2n, "foam flowers")) {
+    return { subId: "foam-flowers", subName: "Foam Flowers" };
+  }
+
+  // Dried Flowers
+  if (equalsText(c2n, "diverse > dried flowers")) return { subId: "dried-flowers", subName: "Dried Flowers" };
+
+  // Water pearls & Snow (AFAS: "Water Pearls - Water Pearls")
+  if (containsText(c2n, "water pearls")) return { subId: "water-pearls-snow", subName: "Water pearls & Snow" };
+
+  // Ice moulds (AFAS: "diverse > ice mould")
+  if (equalsText(c2n, "diverse > ice mould") || containsText(c2n, "ice mould")) {
+    return { subId: "ice-moulds", subName: "Ice moulds" };
+  }
+
+  // Wood
+  if (equalsText(c2n, "wood") || containsText(c2n, "wood")) return { subId: "wood", subName: "Wood" };
+
+  return { subId: "all", subName: "All" };
+}
+
 // ✅ Helper: detecteer de vase-subcats die in AFAS onder "Glas" hangen
 function isVasesGlassBucket(r: AfasProductRow): boolean {
   const { c2 } = getCategoryFields(r);
@@ -975,8 +1004,9 @@ if (equalsText(c1 || "", "terrarium") || equalsText(c1 || "", "terrariums") || c
   return { catId: "gift-box", catName: "Gift box", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
 }
   if (c1n === "diverse" || c1n === "various") {
-    return { catId: "various", catName: "Various", subId: "all", subName: "All", extraSubIds: [] };
-  }
+  const { subId, subName } = inferVariousSubcategory(r);
+  return { catId: "various", catName: "Various", subId, subName, extraSubIds: [] };
+}
   if (c1n === "terrarium" || c1n === "terrariums") {
     return { catId: "terrarium", catName: "Terrarium", subId: "all", subName: "All", extraSubIds: [] };
   }

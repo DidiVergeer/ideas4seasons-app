@@ -140,6 +140,15 @@ export const CATEGORY_COVERS: Record<string, any> = {
 "led-candles:oil-lamp": require("../../assets/subcategories/led-candles/oil-lamp.jpg"),
 "led-candles:chargeable": require("../../assets/subcategories/led-candles/chargeable.jpg"),
 "led-candles:various": require("../../assets/subcategories/led-candles/various.jpg"),
+
+"various:all": require("../../assets/subcategories/various/all.jpg"),
+"various:floral": require("../../assets/subcategories/various/floral.jpg"),
+"various:foam-flowers": require("../../assets/subcategories/various/foam-flowers.jpg"),
+"various:dried-flowers": require("../../assets/subcategories/various/dried-flowers.jpg"),
+"various:water-pearls-snow": require("../../assets/subcategories/various/water-pearls-snow.jpg"),
+"various:ice-moulds": require("../../assets/subcategories/various/ice-moulds.jpg"),
+"various:wood": require("../../assets/subcategories/various/wood.jpg"),
+
 };
 
 // =========================
