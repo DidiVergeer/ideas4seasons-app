@@ -939,8 +939,25 @@ const extraSubcategoryIds: string[] = Array.isArray(extraSubIds) ? [...extraSubI
   const { c1, c5 } = getCategoryFields(r);
   const c1n = normCat(c1 || "");
   const c5n = normCat(c5 || "");
+  const c4 = getCategoryFields(r).c4;
+const c4n = normCat(c4 || "");
 
   const extraCategoryIds: string[] = [];
+
+  // ✅ NEW als extra categorie (zodat alle "New articles" ook zichtbaar zijn onder New)
+if (equalsText(c5 || "", "New articles")) {
+  extraCategoryIds.push("new");
+
+  // Autumn 2026
+  if (containsText(c4n, "autumn 2026")) {
+    extraSubcategoryIds.push("autumn-2026");
+  }
+
+  // Spring 2026 (komt soms als "Spring 2026 collectie")
+  if (containsText(c4n, "spring 2026")) {
+    extraSubcategoryIds.push("spring-2026");
+  }
+}
 
   // ✅ Lamp & dishes: óók tonen onder Glass (dubbel), zonder primary category te veranderen
 {
