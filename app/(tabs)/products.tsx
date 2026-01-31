@@ -366,7 +366,7 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, cart?.customer?.customerNumber, visibleItemcodesSignature]);
 
-  const DIRECT_CATEGORIES = new Set(categories.map((c) => c.id));
+  const DIRECT_CATEGORIES = new Set(["all", "gift-box", "Sale", "Terrarium"]);
 
   const headerTitle =
     step === "categories"
@@ -488,9 +488,14 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
                 onPress={() => {
   setSelectedCategoryId(item.id);
 
-  // ✅ ALTIJD direct naar productlijst (geen subcategorie-scherm)
-  setSelectedSubcategoryId("all");
-  setStep("products");
+  // ✅ All -> direct products
+  if (item.id === "all") {
+    setSelectedSubcategoryId("all");
+    setStep("products");
+  } else {
+    setSelectedSubcategoryId(null);
+    setStep("subcategories");
+  }
 }}
               />
             </View>
