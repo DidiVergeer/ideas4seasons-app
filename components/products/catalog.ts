@@ -793,27 +793,33 @@ function inferVariousSubcategory(r: AfasProductRow) {
   const { c2 } = getCategoryFields(r);
   const c2n = normCat(c2 || "");
 
-  // Floral
+  // ✅ Exact/varianten (veilig)
   if (equalsText(c2n, "diverse > floral")) return { subId: "floral", subName: "Floral" };
 
-  // Foam Flowers (AFAS: "Foam flowers")
-  if (containsText(c2n, "foam flowers") || equalsText(c2n, "foam flowers")) {
+  // Foam Flowers (AFAS kan "Foam flowers" als hele value leveren)
+  if (equalsText(c2n, "foam flowers") || equalsText(c2n, "diverse > foam flowers")) {
     return { subId: "foam-flowers", subName: "Foam Flowers" };
   }
 
   // Dried Flowers
-  if (equalsText(c2n, "diverse > dried flowers")) return { subId: "dried-flowers", subName: "Dried Flowers" };
+  if (equalsText(c2n, "diverse > dried flowers")) {
+    return { subId: "dried-flowers", subName: "Dried Flowers" };
+  }
 
   // Water pearls & Snow (AFAS: "Water Pearls - Water Pearls")
-  if (containsText(c2n, "water pearls")) return { subId: "water-pearls-snow", subName: "Water pearls & Snow" };
+  if (equalsText(c2n, "water pearls - water pearls")) {
+    return { subId: "water-pearls-snow", subName: "Water pearls & Snow" };
+  }
 
-  // Ice moulds (AFAS: "diverse > ice mould")
-  if (equalsText(c2n, "diverse > ice mould") || containsText(c2n, "ice mould")) {
+  // Ice moulds
+  if (equalsText(c2n, "diverse > ice mould")) {
     return { subId: "ice-moulds", subName: "Ice moulds" };
   }
 
   // Wood
-  if (equalsText(c2n, "wood") || containsText(c2n, "wood")) return { subId: "wood", subName: "Wood" };
+  if (equalsText(c2n, "wood") || equalsText(c2n, "diverse > wood") || equalsText(c2n, "various > wood")) {
+    return { subId: "wood", subName: "Wood" };
+  }
 
   return { subId: "all", subName: "All" };
 }
@@ -1066,6 +1072,17 @@ const extraSubcategoryIds: string[] = Array.isArray(extraSubIds) ? [...extraSubI
 const c4n = normCat(c4 || "");
 
   const extraCategoryIds: string[] = [];
+
+  // ✅ Various: alles wat op basis van category_2 in een Various-subcat valt,
+// moet OOK zichtbaar zijn onder Various (zelfs als primary category gift-box/terrarium/etc is).
+{
+  const pick = inferVariousSubcategory(r); // kijkt naar category_2
+  if (pick.subId !== "all") {
+    // alleen toevoegen als het niet al primary Various is
+    if (catId !== "various") extraCategoryIds.push("various");
+    extraSubcategoryIds.push(pick.subId);
+  }
+}
 
   // ✅ NEW als extra categorie (zodat alle "New articles" ook zichtbaar zijn onder New)
 if (equalsText(c5 || "", "New articles")) {
