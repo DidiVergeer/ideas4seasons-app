@@ -253,10 +253,6 @@ const GLASS_LAMP_DISHES = new Set<string>([
   "34122",
   "34125",
   "34126",
-  "34110",
-  "34111",
-  "34112",
-  "34113",
 ]);
 
 // Clear bottles (zoals het al goed werkt)
@@ -782,11 +778,11 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
   // (moet boven Glass/Vases/New etc.)
   // =========================
 
- // 1) HARD override: candle holders die AFAS soms onder Glass zet
-// ✅ maar: Bubble tealight holder (34110-34113) hoort onder Glass -> Lamp & dishes
+// 1) HARD override: candle holders die AFAS soms onder Glass zet
+// ✅ maar: alleen échte lamp-dishes codes moeten NIET naar Candles
 if (containsText(c2 || "", "bubble tealight holder")) {
-  const item = normalizeItemcodeDigits((r as any)?.itemcode);
-  const isLampDish = GLASS_LAMP_DISHES.has(item);
+  const keys = getItemKeys((r as any)?.itemcode); // raw + digits
+  const isLampDish = keys.some((k) => GLASS_LAMP_DISHES.has(k));
 
   if (!isLampDish) {
     const { subId, subName } = inferCandlesSubcategory(r);
