@@ -670,6 +670,13 @@ function inferLedCandleSubcategory(r: AfasProductRow) {
   const { c2, c5 } = getCategoryFields(r);
   const c2n = normCat(c2 || "");
 
+  console.log("LED_CAT2_DEBUG", r.itemcode, {
+  c2_raw: (r as any).category_2,
+  webshop2: (r as any).Webshop_Categorie_2,
+  c2_used: c2,
+  c2n,
+});
+
 // Match alles wat eindigt op het stuk NA ">"
 function c2RightIs(right: string) {
   const rn = normCat(right);
