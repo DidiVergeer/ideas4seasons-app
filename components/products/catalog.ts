@@ -733,6 +733,65 @@ if (c2RightIs("led wax shape")) {
   return { subId: "all", subName: "Alle artikelen" };
 }
 
+function inferPotterySubcategory(r: AfasProductRow) {
+  const { c2, c5 } = getCategoryFields(r);
+
+console.log("POTTERY_MAP", r.itemcode, { c2, c5 });
+  const c2n = normCat(c2 || "");
+
+  // New binnen Pottery
+  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
+
+  // Exact category_2 mapping (zoals jouw lijst)
+  if (equalsText(c2n, "pottery > houses")) return { subId: "houses", subName: "Houses" };
+  if (equalsText(c2n, "pottery > pot with glasses")) return { subId: "glasses", subName: "Pot with glasses" };
+  if (equalsText(c2n, "pottery > pot with wood legs")) return { subId: "wood", subName: "Pot with wood legs" };
+  if (equalsText(c2n, "pottery > pot palma & ibiza")) return { subId: "palma", subName: "Palma & Ibiza pot" };
+
+  // Bubbles & Rise
+  if (equalsText(c2n, "pottery > bubbles pot") || equalsText(c2n, "pottery > rise pot")) {
+    return { subId: "rise", subName: "Bubbles & Rise pot" };
+  }
+
+  // Pouff & Chubby
+  if (equalsText(c2n, "pottery > pouff pottery") || equalsText(c2n, "pottery > chubby")) {
+    return { subId: "chubby", subName: "Pouff & Chubby pot" };
+  }
+
+  // Shiny glaze head
+  if (equalsText(c2n, "pottery > shiny glaze head")) return { subId: "walk", subName: "Shiny glaze head" };
+
+  // Bricks & Carre
+  if (equalsText(c2n, "pottery > bricks") || equalsText(c2n, "pottery > pot carre")) {
+    return { subId: "carre", subName: "Bricks & Carre pot" };
+  }
+
+  // Line & Daydream
+  if (equalsText(c2n, "pottery > line pot") || equalsText(c2n, "pottery > daydream")) {
+    return { subId: "daydream", subName: "Line & Daydream pot" };
+  }
+
+  // Hanoi, Marble, Wave
+  if (
+    equalsText(c2n, "pottery > hanoi") ||
+    equalsText(c2n, "pottery > marble pot") ||
+    equalsText(c2n, "pottery > wave")
+  ) {
+    return { subId: "hanoi", subName: "Hanoi, Marble & Wave pot" };
+  }
+
+  // Diverse / Queen+lady / Embrace
+  if (
+    equalsText(c2n, "pottery > diverse") ||
+    equalsText(c2n, "pottery > queen + lady nature") ||
+    equalsText(c2n, "pottery > embrace")
+  ) {
+    return { subId: "diverse", subName: "Diverse" };
+  }
+
+  return { subId: "all", subName: "Alle artikelen" };
+}
+
 // ✅ Helper: detecteer de vase-subcats die in AFAS onder "Glas" hangen
 function isVasesGlassBucket(r: AfasProductRow): boolean {
   const { c2 } = getCategoryFields(r);
@@ -830,6 +889,18 @@ if (containsText(c2 || "", "bubble tealight holder")) {
     return { catId: "led-candles", catName: "Led candle", subId, subName, extraSubIds: [] };
   }
 
+  // 7) Pottery (category_1 = Pottery)
+if (c1n === "pottery") {
+  const { subId, subName } = inferPotterySubcategory(r);
+  return {
+    catId: "pottery",
+    catName: "Pottery",
+    subId,
+    subName,
+    extraSubIds: [],
+  };
+}
+
   // ✅ GLASS
   if (c1n === "glas" || c1n === "glass") {
     const { primary, extras } = inferGlassSubcategories(r);
@@ -890,9 +961,10 @@ if (equalsText(c1 || "", "terrarium") || equalsText(c1 || "", "terrariums") || c
   }
 
   // ✅ Overige Category 1 mappings
-  if (c1n === "pottery") {
-    return { catId: "pottery", catName: "Pottery", subId: "all", subName: "All", extraSubIds: [] };
-  }
+ if (c1n === "pottery") {
+  const { subId, subName } = inferPotterySubcategory(r);
+  return { catId: "pottery", catName: "Pottery", subId, subName, extraSubIds: [] };
+}
   if (c1n === "aroma") {
     return { catId: "aroma", catName: "Aroma", subId: "all", subName: "All", extraSubIds: [] };
   }
