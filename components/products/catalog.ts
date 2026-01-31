@@ -253,6 +253,10 @@ const GLASS_LAMP_DISHES = new Set<string>([
   "34122",
   "34125",
   "34126",
+  "34110",
+  "34111",
+  "34112",
+  "34113",
 ]);
 
 // Clear bottles (zoals het al goed werkt)
@@ -778,11 +782,18 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
   // (moet boven Glass/Vases/New etc.)
   // =========================
 
-  // 1) HARD override: candle holders die AFAS soms onder Glass zet
-  if (containsText(c2 || "", "bubble tealight holder")) {
+ // 1) HARD override: candle holders die AFAS soms onder Glass zet
+// ✅ maar: Bubble tealight holder (34110-34113) hoort onder Glass -> Lamp & dishes
+if (containsText(c2 || "", "bubble tealight holder")) {
+  const item = normalizeItemcodeDigits((r as any)?.itemcode);
+  const isLampDish = GLASS_LAMP_DISHES.has(item);
+
+  if (!isLampDish) {
     const { subId, subName } = inferCandlesSubcategory(r);
     return { catId: "candles", catName: "Candles", subId, subName, extraSubIds: [] };
   }
+  // als het wél lamp-dishes is: laat 'm doorvallen naar de Glass override hieronder
+}
 
   // 2) LED chargeable override (op itemcode)
   {
@@ -830,18 +841,6 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
         extraSubIds: [],
       };
     }
-  }
-
-  // ✅ OVERRIDE: Handmade heavy glass + Machine made horen bij Vases (ook als category_1 = Glas)
-  if (isVasesGlassBucket(r)) {
-    const { primary, extras } = inferVasesSubcategories(r);
-    return {
-      catId: "vases",
-      catName: "Vases",
-      subId: primary.id,
-      subName: primary.name,
-      extraSubIds: extras.map((x) => x.id),
-    };
   }
 
   // ✅ GLASS
@@ -959,6 +958,9 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
 
   const extraCategoryIds: string[] = [];
 
+  // ✅ Glass vase-buckets óók tonen onder Vases (dubbel)
+if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
+
   // ✅ Sale als extra categorie
   const isSale = equalsText(c5 || "", "sale") || c5n.endsWith(" > sale");
   if (isSale) extraCategoryIds.push("sale");
@@ -973,6 +975,9 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
     c1n === "giftbox";
 
   if (isGiftBoxC1) extraCategoryIds.push("gift-box");
+
+  // ✅ Alles wat "vases bucket" is (maar AFAS category_1 = Glass) óók tonen onder Vases
+if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
 
   const { main, all } = normalizeImages(r);
 
