@@ -974,7 +974,22 @@ if (equalsText(c5 || "", "New articles")) {
 }
 
   // ✅ Glass vase-buckets óók tonen onder Vases (dubbel)
-if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
+// + geef ook de juiste Vases-subcategorie mee, anders blijft Vases->Handmade heavy glass leeg
+if (isVasesGlassBucket(r)) {
+  extraCategoryIds.push("vases");
+
+  const { primary, extras } = inferVasesSubcategories(r);
+
+  // primaire vases subcat (bijv. handmade-heavy-glass / machine-made)
+  if (primary?.id && primary.id !== "all") {
+    extraSubcategoryIds.push(primary.id);
+  }
+
+  // eventuele extra vases subcats (als je die ooit gebruikt)
+  for (const e of extras ?? []) {
+    if (e?.id && e.id !== "all") extraSubcategoryIds.push(e.id);
+  }
+}
 
   // ✅ Sale als extra categorie
   const isSale = equalsText(c5 || "", "sale") || c5n.endsWith(" > sale");
