@@ -632,11 +632,11 @@ function inferVasesSubcategories(r: AfasProductRow): { primary: SubPick; extras:
 function inferAromaSubcategory(r: AfasProductRow) {
   const { c2, c5 } = getCategoryFields(r);
 
-  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
-
   if (containsText(c2 || "", "access")) return { subId: "accessories", subName: "Accessories" };
   if (containsText(c2 || "", "cubes")) return { subId: "cubes", subName: "Cubes" };
-  if (containsText(c2 || "", "gift")) return { subId: "giftbox", subName: "Aroma gift box" };
+ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift set")) {
+  return { subId: "giftbox", subName: "Aroma gift box" };
+}
   if (containsText(c2 || "", "shapes")) return { subId: "shapes", subName: "Shapes" };
   if (containsText(c2 || "", "bowl")) return { subId: "bowl", subName: "Bowl" };
   if (containsText(c2 || "", "diffuser")) return { subId: "diffusers", subName: "Diffusers" };

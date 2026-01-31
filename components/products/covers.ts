@@ -93,7 +93,6 @@ export const CATEGORY_COVERS: Record<string, any> = {
   "vases:handmade-heavy-glass": require("../../assets/subcategories/vases/handmade-heavy-glass.jpg"),
   "vases:machine-made": require("../../assets/subcategories/vases/machine-made.jpg"),
 
-"aroma:new": require("../../assets/subcategories/aroma/new.jpg"),
 "aroma:all": require("../../assets/subcategories/aroma/all.jpg"),
 "aroma:accessories": require("../../assets/subcategories/aroma/accessoires.jpg"),
 "aroma:cubes": require("../../assets/subcategories/aroma/cubes.jpg"),

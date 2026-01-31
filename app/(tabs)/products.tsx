@@ -173,7 +173,6 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
         { id: "sets", name: "Sets", categoryId: "pottery" },
       ],
       aroma: [
-  { id: "new", name: "New", categoryId: "aroma" },
   { id: "all", name: "Alle artikelen", categoryId: "aroma" },
   { id: "accessories", name: "Accessories", categoryId: "aroma" },
   { id: "cubes", name: "Cubes", categoryId: "aroma" },
@@ -483,6 +482,15 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
         </View>
       )}
 
+    {!loading && !error && offlineProductsInfo?.savedAt && (
+  <View style={styles.offlineBanner}>
+    <Text style={styles.offlineBannerTitle}>Offline productlijst</Text>
+    <Text style={styles.offlineBannerText}>
+      Laatste update: {new Date(offlineProductsInfo.savedAt).toLocaleString()}
+    </Text>
+  </View>
+)}
+
       {!loading && !error && dataBugs.length > 0 && (
         <View style={styles.dataBugBanner}>
           <Text style={styles.dataBugText}>
@@ -651,4 +659,16 @@ const styles = StyleSheet.create({
     borderColor: "#F59E0B",
   },
   dataBugText: { color: "#92400E", fontWeight: "800", fontSize: 12 },
+
+  offlineBanner: {
+  marginHorizontal: 12,
+  marginTop: 10,
+  padding: 12,
+  borderRadius: 10,
+  backgroundColor: "#FFEDD5",
+  borderWidth: 1,
+  borderColor: "#FB923C",
+},
+offlineBannerTitle: { color: "#9A3412", fontWeight: "900", fontSize: 12 },
+offlineBannerText: { color: "#9A3412", fontWeight: "700", fontSize: 12, marginTop: 4 },
 });
