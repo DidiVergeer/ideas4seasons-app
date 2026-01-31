@@ -891,12 +891,8 @@ if (equalsText(c5 || "", "sale") || c5n.endsWith(" > sale")) {
 
 // ✅ CATEGORY_1 moet winnen van "Themes -> various"
 // Anders verdwijnen Gift box / Terrarium items met gevulde category_3 naar Various.
-if (
-  equalsText(c1 || "", "gift box") ||
-  equalsText(c1 || "", "gift boxes") ||
-  equalsText(c1 || "", "giftbox") ||
-  (containsText(c1n, "gift") && containsText(c1n, "box"))
-) {
+
+if (equalsText(c1 || "", "gift box") || equalsText(c1 || "", "gift-box") || containsText(c1n, "gift box")) {
   return { catId: "gift-box", catName: "Gift box", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
 }
 
