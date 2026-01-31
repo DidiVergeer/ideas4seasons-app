@@ -94,6 +94,9 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
 
   const { cart, prefetchPrices } = useCart() as any;
 
+  // ✅ categories die direct naar producten gaan
+const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query.trim()), 200);
     return () => clearTimeout(t);
@@ -230,10 +233,10 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     return categories.find((c) => c.id === selectedCategoryId) ?? null;
   }, [categories, selectedCategoryId]);
 
- const subcategories: Subcategory[] = useMemo(() => {
+const subcategories: Subcategory[] = useMemo(() => {
   if (!selectedCategoryId) return [];
 
-  // ✅ Direct categories hebben géén subcategorie-scherm
+  // ✅ Direct categories hebben geen subcategory-scherm
   if (DIRECT_CATEGORIES.has(selectedCategoryId)) return [];
 
   const list = subcategoriesByCategory[selectedCategoryId] ?? [];
@@ -371,8 +374,6 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, cart?.customer?.customerNumber, visibleItemcodesSignature]);
 
-  const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
-
   const headerTitle =
     step === "categories"
       ? "Lookbooks"
@@ -380,8 +381,23 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
         ? currentCategory?.name ?? "Category"
         : "Products";
 
-  const back = () => {
-  if (step === "products" || step === "subcategories") {
+ const back = () => {
+  if (step === "products") {
+    // ✅ Direct categories: terug naar categories
+    if (selectedCategoryId && DIRECT_CATEGORIES.has(selectedCategoryId)) {
+      setStep("categories");
+      setSelectedCategoryId(null);
+      setSelectedSubcategoryId(null);
+      return;
+    }
+
+    // ✅ Normale categories: terug naar subcategories
+    setStep("subcategories");
+    setSelectedSubcategoryId(null);
+    return;
+  }
+
+  if (step === "subcategories") {
     setStep("categories");
     setSelectedCategoryId(null);
     setSelectedSubcategoryId(null);
@@ -493,16 +509,16 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
                 onPress={() => {
   setSelectedCategoryId(item.id);
 
-  // ✅ Direct categories -> direct products (zelfde als All)
+ setSelectedCategoryId(item.id);
+
+// ✅ Direct categories -> direct products
 if (DIRECT_CATEGORIES.has(item.id)) {
   setSelectedSubcategoryId("all");
   setStep("products");
-  return;
+} else {
+  setSelectedSubcategoryId(null);
+  setStep("subcategories");
 }
-
-// ✅ Overige -> eerst subcategorieën
-setSelectedSubcategoryId(null);
-setStep("subcategories");
 }}
               />
             </View>
