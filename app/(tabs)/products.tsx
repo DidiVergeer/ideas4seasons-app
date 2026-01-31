@@ -512,17 +512,18 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
               <CategoryTile
                 item={item}
                 onPress={() => {
-                  setSelectedCategoryId(item.id);
+  setSelectedCategoryId(item.id);
 
-                  // ✅ All -> direct products
-                  if (item.id === "all") {
-                    setSelectedSubcategoryId("all");
-                    setStep("products");
-                  } else {
-                    setSelectedSubcategoryId(null);
-                    setStep("subcategories");
-                  }
-                }}
+  // ✅ All -> direct products
+  if (item.id === "all") {
+    setSelectedSubcategoryId("all");
+    setStep("products");
+  } else {
+    setSelectedSubcategoryId(null);
+    setStep("subcategories");
+  }
+}}
+
               />
             </View>
           )}

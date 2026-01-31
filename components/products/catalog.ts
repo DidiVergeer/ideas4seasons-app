@@ -758,6 +758,7 @@ function inferCategoryFromRow(r: AfasProductRow): {
 
   const c1n = normCat(c1 || "");
   const c3n = normCat(c3 || "");
+  const c5n = normCat(c5 || "");
 
   // ✅ OVERRIDE: Aroma Gift set valt onder Aroma -> giftbox, ook als category_1 = Gift box
 if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift set")) {
@@ -883,10 +884,10 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
     return { catId: "new", catName: "New", subId: "all", subName: "All", extraSubIds: [] };
   }
 
-  // ✅ SALE
-  if (normCat(c5 || "").includes("sale")) {
-    return { catId: "sale", catName: "Sale", subId: "all", subName: "All", extraSubIds: [] };
-  }
+  // ✅ SALE (op category_5)
+if (c5n === "sale" || c5n.endsWith(" > sale") || containsText(c5n, "sale")) {
+  return { catId: "sale", catName: "Sale", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
+}
 
   // ✅ Themes -> various (non-glass)
   if (String(c3n || "").trim().length > 0) {
@@ -907,14 +908,14 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
     return { catId: "led-candles", catName: "LED candles", subId: "all", subName: "All", extraSubIds: [] };
   }
   if (c1n === "gift box" || c1n === "gift boxes" || c1n === "giftbox") {
-    return { catId: "gift-box", catName: "Gift box", subId: "all", subName: "All", extraSubIds: [] };
-  }
+  return { catId: "gift-box", catName: "Gift box", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
+}
   if (c1n === "diverse" || c1n === "various") {
     return { catId: "various", catName: "Various", subId: "all", subName: "All", extraSubIds: [] };
   }
   if (c1n === "terrarium" || c1n === "terrariums") {
-    return { catId: "terrarium", catName: "Terrarium", subId: "all", subName: "All", extraSubIds: [] };
-  }
+  return { catId: "terrarium", catName: "Terrarium", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
+}
 
   return { catId: "various", catName: "Various", subId: "all", subName: "All", extraSubIds: [] };
 }
