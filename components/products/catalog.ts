@@ -884,10 +884,26 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
     return { catId: "new", catName: "New", subId: "all", subName: "All", extraSubIds: [] };
   }
 
-  // ✅ SALE (op category_5)
-if (c5n === "sale" || c5n.endsWith(" > sale") || containsText(c5n, "sale")) {
+ // ✅ SALE (alle artikelen met category_5 = Sale)
+if (equalsText(c5 || "", "sale") || c5n.endsWith(" > sale")) {
   return { catId: "sale", catName: "Sale", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
 }
+
+// ✅ CATEGORY_1 moet winnen van "Themes -> various"
+// Anders verdwijnen Gift box / Terrarium items met gevulde category_3 naar Various.
+if (
+  equalsText(c1 || "", "gift box") ||
+  equalsText(c1 || "", "gift boxes") ||
+  equalsText(c1 || "", "giftbox") ||
+  (containsText(c1n, "gift") && containsText(c1n, "box"))
+) {
+  return { catId: "gift-box", catName: "Gift box", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
+}
+
+if (equalsText(c1 || "", "terrarium") || equalsText(c1 || "", "terrariums") || containsText(c1n, "terrarium")) {
+  return { catId: "terrarium", catName: "Terrarium", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
+}
+
 
   // ✅ Themes -> various (non-glass)
   if (String(c3n || "").trim().length > 0) {
@@ -914,8 +930,8 @@ if (c5n === "sale" || c5n.endsWith(" > sale") || containsText(c5n, "sale")) {
     return { catId: "various", catName: "Various", subId: "all", subName: "All", extraSubIds: [] };
   }
   if (c1n === "terrarium" || c1n === "terrariums") {
-  return { catId: "terrarium", catName: "Terrarium", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
-}
+    return { catId: "terrarium", catName: "Terrarium", subId: "all", subName: "All", extraSubIds: [] };
+  }
 
   return { catId: "various", catName: "Various", subId: "all", subName: "All", extraSubIds: [] };
 }
