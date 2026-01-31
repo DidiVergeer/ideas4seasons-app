@@ -672,10 +672,18 @@ function inferLedCandleSubcategory(r: AfasProductRow) {
 
   if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
 
-  if (containsText(c2 || "", "cannelure")) return { subId: "cannelure", subName: "Cannelure" };
-  if (containsText(c2 || "", "wood")) return { subId: "wood", subName: "Wood" };
-  if (containsText(c2 || "", "tracy")) return { subId: "tracy", subName: "Tracy" };
-  if (containsText(c2 || "", "wax shape")) return { subId: "wax-shape", subName: "Wax shape" };
+  if (containsText(c2 || "", "cannelure")) {
+  return { subId: "cannelure", subName: "Cannelure" };
+}
+  if (containsText(c2 || "", "wood candle") || containsText(c2 || "", "led candle > wood")) {
+  return { subId: "wood", subName: "Wood" };
+}
+  if (containsText(c2 || "", "led candle tracy") || containsText(c2 || "", "tracy")) {
+  return { subId: "tracy", subName: "Tracy" };
+}
+  if (containsText(c2 || "", "wax shape") || containsText(c2 || "", "led wax shape")) {
+  return { subId: "wax-shape", subName: "Wax shape" };
+}
   if (containsText(c2 || "", "pillar")) return { subId: "pillar", subName: "Pillar" };
   if (containsText(c2 || "", "pencil")) return { subId: "pencil", subName: "Pencil" };
   if (containsText(c2 || "", "honeycomb")) return { subId: "honeycomb", subName: "Honeycomb" };
