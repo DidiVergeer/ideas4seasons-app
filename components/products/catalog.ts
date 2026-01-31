@@ -607,11 +607,14 @@ function inferVasesSubcategories(r: AfasProductRow): { primary: SubPick; extras:
     if (VASES_MACHINE_MADE_EXTRA.has(k) || VASES_MACHINE_MADE_EXTRA.has(kd)) hits.push("machine-made");
   }
 
-  // C) Exact category_2 mapping (zoals jij stuurde)
-  if (c2n && VASES_CERAMIC_C2_EXACT.has(c2n)) hits.push("ceramic");
-  if (c2n && VASES_STONEWARE_C2_EXACT.has(c2n)) hits.push("stoneware");
-  if (c2n && VASES_HANDMADE_HEAVY_GLASS_C2_EXACT.has(c2n)) hits.push("handmade-heavy-glass");
-  if (c2n && VASES_MACHINE_MADE_C2_EXACT.has(c2n)) hits.push("machine-made");
+  // C) Exact category_2 mapping (genormaliseerd vergelijken)
+const hasNorm = (set: Set<string>, valueNorm: string) =>
+  Array.from(set).some((v) => normCat(v) === valueNorm);
+
+if (c2n && hasNorm(VASES_CERAMIC_C2_EXACT, c2n)) hits.push("ceramic");
+if (c2n && hasNorm(VASES_STONEWARE_C2_EXACT, c2n)) hits.push("stoneware");
+if (c2n && hasNorm(VASES_HANDMADE_HEAVY_GLASS_C2_EXACT, c2n)) hits.push("handmade-heavy-glass");
+if (c2n && hasNorm(VASES_MACHINE_MADE_C2_EXACT, c2n)) hits.push("machine-made");
 
   const uniqHits = Array.from(new Set(hits));
   const priority: string[] = ["new", "ceramic", "stoneware", "handmade-heavy-glass", "machine-made"];
