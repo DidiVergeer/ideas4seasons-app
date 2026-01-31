@@ -824,21 +824,6 @@ if (containsText(c2 || "", "bubble tealight holder")) {
     return { catId: "led-candles", catName: "Led candle", subId, subName, extraSubIds: [] };
   }
 
-  // ✅ OVERRIDE: Lamp & dishes tonen onder Glass, ook als AFAS category_1 bv. Candles is
-  // Alleen voor deze vaste itemcode-set (dus geen "mix" van andere candles)
-  {
-    const item = normalizeItemcodeDigits((r as any)?.itemcode);
-    if (GLASS_LAMP_DISHES.has(item)) {
-      return {
-        catId: "glass",
-        catName: "Glass",
-        subId: "lamp-dishes",
-        subName: "Lamp & dishes",
-        extraSubIds: [],
-      };
-    }
-  }
-
   // ✅ GLASS
   if (c1n === "glas" || c1n === "glass") {
     const { primary, extras } = inferGlassSubcategories(r);
@@ -945,7 +930,10 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
 
   const stockStatus: StockStatus = availableStock > 0 ? "in_stock" : expected ? "expected" : "out";
 
-    const { catId, catName, subId, subName, extraSubIds } = inferCategoryFromRow(r);
+  const { catId, catName, subId, subName, extraSubIds } = inferCategoryFromRow(r);
+
+// ✅ we gaan extraSubcategoryIds uitbreiden in deze functie
+const extraSubcategoryIds: string[] = Array.isArray(extraSubIds) ? [...extraSubIds] : [];
 
   // ✅ Extra categorie-labels (zonder primary category te overschrijven)
   const { c1, c5 } = getCategoryFields(r);
@@ -953,6 +941,17 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
   const c5n = normCat(c5 || "");
 
   const extraCategoryIds: string[] = [];
+
+  // ✅ Lamp & dishes: óók tonen onder Glass (dubbel), zonder primary category te veranderen
+{
+  const keys = getItemKeys((r as any)?.itemcode); // raw + digits
+  const isLampDish = keys.some((k) => GLASS_LAMP_DISHES.has(k));
+
+  if (isLampDish) {
+    extraCategoryIds.push("glass");          // toon ook onder Glass
+    extraSubcategoryIds.push("lamp-dishes"); // en specifiek in Glass -> Lamp & dishes
+  }
+}
 
   // ✅ Glass vase-buckets óók tonen onder Vases (dubbel)
 if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
@@ -971,9 +970,6 @@ if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
     c1n === "giftbox";
 
   if (isGiftBoxC1) extraCategoryIds.push("gift-box");
-
-  // ✅ Alles wat "vases bucket" is (maar AFAS category_1 = Glass) óók tonen onder Vases
-if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
 
   const { main, all } = normalizeImages(r);
 
@@ -1002,7 +998,9 @@ if (isVasesGlassBucket(r)) extraCategoryIds.push("vases");
     subcategoryId: subId,
     subcategoryName: subName,
 
-    extraSubcategoryIds: extraSubIds.length ? extraSubIds : undefined,
+    extraSubcategoryIds: extraSubcategoryIds.length
+  ? Array.from(new Set(extraSubcategoryIds))
+  : undefined,
     extraCategoryIds: extraCategoryIds.length ? Array.from(new Set(extraCategoryIds)) : undefined,
   };
 }
