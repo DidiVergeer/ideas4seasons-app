@@ -212,30 +212,15 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
   { id: "various", name: "Various", categoryId: "led-candles" },
 ],
 
-      "gift-box": [
-        { id: "all", name: "Alle artikelen", categoryId: "gift-box" },
-        { id: "small", name: "Small", categoryId: "gift-box" },
-        { id: "medium", name: "Medium", categoryId: "gift-box" },
-        { id: "large", name: "Large", categoryId: "gift-box" },
-      ],
+      "gift-box": [{ id: "all", name: "Alle artikelen", categoryId: "gift-box" }],
       various: [
         { id: "all", name: "Alle artikelen", categoryId: "various" },
         { id: "accessories", name: "Accessories", categoryId: "various" },
         { id: "decor", name: "Decor", categoryId: "various" },
         { id: "other", name: "Other", categoryId: "various" },
       ],
-      sale: [
-        { id: "all", name: "Alle artikelen", categoryId: "sale" },
-        { id: "last-chance", name: "Last chance", categoryId: "sale" },
-        { id: "discount", name: "Discount", categoryId: "sale" },
-        { id: "bundle", name: "Bundles", categoryId: "sale" },
-      ],
-      terrarium: [
-        { id: "all", name: "Alle artikelen", categoryId: "terrarium" },
-        { id: "open", name: "Open", categoryId: "terrarium" },
-        { id: "closed", name: "Closed", categoryId: "terrarium" },
-        { id: "tools", name: "Tools", categoryId: "terrarium" },
-      ],
+      sale: [{ id: "all", name: "Alle artikelen", categoryId: "sale" }],
+      terrarium: [{ id: "all", name: "Alle artikelen", categoryId: "terrarium" }],
     }),
     []
   );
@@ -381,6 +366,8 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, cart?.customer?.customerNumber, visibleItemcodesSignature]);
 
+  const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
+
   const headerTitle =
     step === "categories"
       ? "Lookbooks"
@@ -390,17 +377,19 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
 
   const back = () => {
     if (step === "products") {
-      if (selectedCategoryId === "all") {
-        setStep("categories");
-        setSelectedCategoryId(null);
-        setSelectedSubcategoryId(null);
-        return;
-      }
+  // ✅ Direct categories: terug naar categories
+  if (selectedCategoryId && DIRECT_CATEGORIES.has(selectedCategoryId)) {
+    setStep("categories");
+    setSelectedCategoryId(null);
+    setSelectedSubcategoryId(null);
+    return;
+  }
 
-      setStep("subcategories");
-      setSelectedSubcategoryId(null);
-      return;
-    }
+  // ✅ Normale categories: terug naar subcategorieën
+  setStep("subcategories");
+  setSelectedSubcategoryId(null);
+  return;
+}
 
     if (step === "subcategories") {
       setStep("categories");
@@ -523,7 +512,6 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     setStep("subcategories");
   }
 }}
-
               />
             </View>
           )}
