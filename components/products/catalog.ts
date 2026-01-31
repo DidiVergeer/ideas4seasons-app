@@ -739,9 +739,6 @@ function inferPotterySubcategory(r: AfasProductRow) {
 console.log("POTTERY_MAP", r.itemcode, { c2, c5 });
   const c2n = normCat(c2 || "");
 
-  // New binnen Pottery
-  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
-
   // Exact category_2 mapping (zoals jouw lijst)
   if (equalsText(c2n, "pottery > houses")) return { subId: "houses", subName: "Houses" };
   if (equalsText(c2n, "pottery > pot with glasses")) return { subId: "glasses", subName: "Pot with glasses" };
@@ -1018,6 +1015,15 @@ const extraSubcategoryIds: string[] = Array.isArray(extraSubIds) ? [...extraSubI
 {
   const { c5 } = getCategoryFields(r);
   if (catId === "led-candles" && equalsText(c5 || "", "New articles") && subId !== "new") {
+    extraSubcategoryIds.push("new");
+  }
+}
+
+// ✅ Pottery: als het New articles is, dan óók tonen in Pottery -> New
+// (maar primary blijft gewoon houses/palma/etc.)
+{
+  const { c5 } = getCategoryFields(r);
+  if (catId === "pottery" && equalsText(c5 || "", "New articles") && subId !== "new") {
     extraSubcategoryIds.push("new");
   }
 }
