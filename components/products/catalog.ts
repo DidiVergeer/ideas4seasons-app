@@ -96,6 +96,8 @@ export type Product = {
 
   // ✅ EXTRA: voor dubbel tonen (bv. with-cork óók onder empty-terrariums)
   extraSubcategoryIds?: string[];
+    // ✅ EXTRA: voor dubbel tonen in categorieën (bv. Sale naast Gift box/Glass/etc.)
+  extraCategoryIds?: string[];
 };
 
 export type Category = {
@@ -884,11 +886,6 @@ if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift s
     return { catId: "new", catName: "New", subId: "all", subName: "All", extraSubIds: [] };
   }
 
- // ✅ SALE (alle artikelen met category_5 = Sale)
-if (equalsText(c5 || "", "sale") || c5n.endsWith(" > sale")) {
-  return { catId: "sale", catName: "Sale", subId: "all", subName: "Alle artikelen", extraSubIds: [] };
-}
-
 // ✅ CATEGORY_1 moet winnen van "Themes -> various"
 // Anders verdwijnen Gift box / Terrarium items met gevulde category_3 naar Various.
 
@@ -954,6 +951,11 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
   const stockStatus: StockStatus = availableStock > 0 ? "in_stock" : expected ? "expected" : "out";
 
   const { catId, catName, subId, subName, extraSubIds } = inferCategoryFromRow(r);
+  const { c5 } = getCategoryFields(r);
+  const c5n = normCat(c5 || "");
+  const isSale = equalsText(c5 || "", "sale") || c5n.endsWith(" > sale");
+  const extraCategoryIds = isSale ? ["sale"] : [];
+
   const { main, all } = normalizeImages(r);
 
   return {
@@ -982,6 +984,7 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
     subcategoryName: subName,
 
     extraSubcategoryIds: extraSubIds.length ? extraSubIds : undefined,
+    extraCategoryIds: extraCategoryIds.length ? extraCategoryIds : undefined,
   };
 }
 

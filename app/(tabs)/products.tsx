@@ -327,7 +327,11 @@ const subcategories: Subcategory[] = useMemo(() => {
     const byCat =
       selectedCategoryId === "all"
         ? allProducts
-        : allProducts.filter((p: any) => p.categoryId === selectedCategoryId);
+        : allProducts.filter((p: any) => {
+    if (p.categoryId === selectedCategoryId) return true;
+    const extras: string[] = Array.isArray(p.extraCategoryIds) ? p.extraCategoryIds : [];
+    return extras.includes(selectedCategoryId);
+  });
 
     if (selectedSubcategoryId === "all") return byCat;
 
