@@ -682,19 +682,20 @@ function c2RightIs(right: string) {
 
   if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
 
-  if (c2RightIs("cannelure")) {
+ // ✅ EXACT match op volledige CAT2 (genormaliseerd via normCat)
+if (c2n === normCat("candle> Cannelure")) {
   return { subId: "cannelure", subName: "Cannelure" };
 }
 
-if (c2RightIs("wood candle")) {
+if (c2n === normCat("led candle> wood candle")) {
   return { subId: "wood", subName: "Wood" };
 }
 
-if (c2RightIs("led candle tracy")) {
+if (c2n === normCat("Candles> led candle tracy")) {
   return { subId: "tracy", subName: "Tracy" };
 }
 
-if (c2RightIs("led wax shape") || c2RightIs("wax shape")) {
+if (c2n === normCat("led candles> led wax shape")) {
   return { subId: "wax-shape", subName: "Wax shape" };
 }
   if (containsText(c2 || "", "pillar")) return { subId: "pillar", subName: "Pillar" };
