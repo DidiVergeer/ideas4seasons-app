@@ -692,7 +692,9 @@ function c2RightIs(right: string) {
   const item = normalizeItemcodeDigits((r as any)?.itemcode);
   if (LED_CHARGEABLE.has(String(item))) return { subId: "chargeable", subName: "Chargeable" };
 
-  if (equalsText(c5 || "", "New articles")) return { subId: "new", subName: "New" };
+  const isNew = equalsText(c5 || "", "New articles");
+  // Als er geen specifieke match was, maar het is wel New -> dan valt het hierop terug
+if (isNew) return { subId: "new", subName: "New" };
 
 // ✅ AFAS varianten: match op het deel NA ">" (robust voor candle/led candle/Candles/led candles)
 if (c2RightIs("cannelure")) {
@@ -937,6 +939,15 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
 
 // ✅ we gaan extraSubcategoryIds uitbreiden in deze functie
 const extraSubcategoryIds: string[] = Array.isArray(extraSubIds) ? [...extraSubIds] : [];
+
+// ✅ LED candles: als het New articles is, dan óók tonen in subcategorie "new"
+// (maar alleen als primary subId niet al "new" is)
+{
+  const { c5 } = getCategoryFields(r);
+  if (catId === "led-candles" && equalsText(c5 || "", "New articles") && subId !== "new") {
+    extraSubcategoryIds.push("new");
+  }
+}
 
   // ✅ Extra categorie-labels (zonder primary category te overschrijven)
   const { c1, c5 } = getCategoryFields(r);
