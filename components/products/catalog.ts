@@ -693,8 +693,6 @@ function c2RightIs(right: string) {
   if (LED_CHARGEABLE.has(String(item))) return { subId: "chargeable", subName: "Chargeable" };
 
   const isNew = equalsText(c5 || "", "New articles");
-  // Als er geen specifieke match was, maar het is wel New -> dan valt het hierop terug
-if (isNew) return { subId: "new", subName: "New" };
 
 // ✅ AFAS varianten: match op het deel NA ">" (robust voor candle/led candle/Candles/led candles)
 if (c2RightIs("cannelure")) {
@@ -728,6 +726,9 @@ if (c2RightIs("led wax shape")) {
   if (containsText(c2 || "", " > led") || equalsText(c2 || "", "led candle > led")) {
     return { subId: "various", subName: "Various" };
   }
+
+    // ✅ fallback: als het New is, maar we hebben geen match gevonden -> zet hem in LED -> New
+  if (isNew) return { subId: "new", subName: "New" };
 
   return { subId: "all", subName: "Alle artikelen" };
 }

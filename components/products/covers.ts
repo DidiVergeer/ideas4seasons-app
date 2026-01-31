@@ -93,6 +93,18 @@ export const CATEGORY_COVERS: Record<string, any> = {
   "vases:handmade-heavy-glass": require("../../assets/subcategories/vases/handmade-heavy-glass.jpg"),
   "vases:machine-made": require("../../assets/subcategories/vases/machine-made.jpg"),
 
+  "pottery:houses": require("../../assets/subcategories/pottery/houses.jpg"),
+"pottery:glasses": require("../../assets/subcategories/pottery/glasses.jpg"),
+"pottery:wood": require("../../assets/subcategories/pottery/wood.jpg"),
+"pottery:palma": require("../../assets/subcategories/pottery/palma.jpg"),
+"pottery:rise": require("../../assets/subcategories/pottery/rise.jpg"),
+"pottery:chubby": require("../../assets/subcategories/pottery/chubby.jpg"),
+"pottery:walk": require("../../assets/subcategories/pottery/walk.jpg"),
+"pottery:carre": require("../../assets/subcategories/pottery/carre.jpg"),
+"pottery:daydream": require("../../assets/subcategories/pottery/daydream.jpg"),
+"pottery:hanoi": require("../../assets/subcategories/pottery/hanoi.jpg"),
+"pottery:diverse": require("../../assets/subcategories/pottery/diverse.jpg"),
+
 "aroma:all": require("../../assets/subcategories/aroma/all.jpg"),
 "aroma:accessories": require("../../assets/subcategories/aroma/accessoires.jpg"),
 "aroma:cubes": require("../../assets/subcategories/aroma/cubes.jpg"),

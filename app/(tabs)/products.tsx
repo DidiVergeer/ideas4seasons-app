@@ -170,11 +170,27 @@ const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
     { id: "machine-made", name: "Machine made", categoryId: "vases" },
   ],
       pottery: [
-        { id: "all", name: "Alle artikelen", categoryId: "pottery" },
-        { id: "indoor", name: "Indoor", categoryId: "pottery" },
-        { id: "outdoor", name: "Outdoor", categoryId: "pottery" },
-        { id: "sets", name: "Sets", categoryId: "pottery" },
-      ],
+  { id: "new", name: "New", categoryId: "pottery" },
+  { id: "all", name: "Alle artikelen", categoryId: "pottery" },
+
+  { id: "houses", name: "Houses", categoryId: "pottery" },
+  { id: "glasses", name: "Pot with glasses", categoryId: "pottery" },
+  { id: "wood", name: "Pot with wood legs", categoryId: "pottery" },
+  { id: "palma", name: "Palma & Ibiza pot", categoryId: "pottery" },
+
+  { id: "rise", name: "Bubbles & Rise pot", categoryId: "pottery" },
+  { id: "chubby", name: "Pouff & Chubby pot", categoryId: "pottery" },
+
+  { id: "walk", name: "Shiny glaze head", categoryId: "pottery" },
+
+  { id: "carre", name: "Bricks & Carre pot", categoryId: "pottery" },
+  { id: "daydream", name: "Line & Daydream pot", categoryId: "pottery" },
+
+  { id: "hanoi", name: "Hanoi, Marble & Wave pot", categoryId: "pottery" },
+
+  { id: "diverse", name: "Diverse", categoryId: "pottery" },
+],
+
       aroma: [
   { id: "all", name: "Alle artikelen", categoryId: "aroma" },
   { id: "accessories", name: "Accessories", categoryId: "aroma" },
