@@ -366,7 +366,7 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, cart?.customer?.customerNumber, visibleItemcodesSignature]);
 
-  const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
+  const DIRECT_CATEGORIES = new Set(categories.map((c) => c.id));
 
   const headerTitle =
     step === "categories"
@@ -376,28 +376,13 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
         : "Products";
 
   const back = () => {
-    if (step === "products") {
-  // ✅ Direct categories: terug naar categories
-  if (selectedCategoryId && DIRECT_CATEGORIES.has(selectedCategoryId)) {
+  if (step === "products" || step === "subcategories") {
     setStep("categories");
     setSelectedCategoryId(null);
     setSelectedSubcategoryId(null);
     return;
   }
-
-  // ✅ Normale categories: terug naar subcategorieën
-  setStep("subcategories");
-  setSelectedSubcategoryId(null);
-  return;
-}
-
-    if (step === "subcategories") {
-      setStep("categories");
-      setSelectedCategoryId(null);
-      setSelectedSubcategoryId(null);
-      return;
-    }
-  };
+};
 
   const GRID_GAP = 10;
   const GRID_PADDING = 12;
@@ -503,14 +488,9 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
                 onPress={() => {
   setSelectedCategoryId(item.id);
 
-  // ✅ All -> direct products
-  if (item.id === "all") {
-    setSelectedSubcategoryId("all");
-    setStep("products");
-  } else {
-    setSelectedSubcategoryId(null);
-    setStep("subcategories");
-  }
+  // ✅ ALTIJD direct naar productlijst (geen subcategorie-scherm)
+  setSelectedSubcategoryId("all");
+  setStep("products");
 }}
               />
             </View>
