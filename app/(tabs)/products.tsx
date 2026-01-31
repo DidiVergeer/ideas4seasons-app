@@ -230,12 +230,17 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     return categories.find((c) => c.id === selectedCategoryId) ?? null;
   }, [categories, selectedCategoryId]);
 
-  const subcategories: Subcategory[] = useMemo(() => {
-    if (!selectedCategoryId) return [];
-    const list = subcategoriesByCategory[selectedCategoryId] ?? [];
-    if (list.length > 0) return list;
-    return [{ id: "all", name: "Alle artikelen", categoryId: selectedCategoryId } as Subcategory];
-  }, [selectedCategoryId, subcategoriesByCategory]);
+ const subcategories: Subcategory[] = useMemo(() => {
+  if (!selectedCategoryId) return [];
+
+  // ✅ Direct categories hebben géén subcategorie-scherm
+  if (DIRECT_CATEGORIES.has(selectedCategoryId)) return [];
+
+  const list = subcategoriesByCategory[selectedCategoryId] ?? [];
+  if (list.length > 0) return list;
+
+  return [{ id: "all", name: "Alle artikelen", categoryId: selectedCategoryId } as Subcategory];
+}, [selectedCategoryId, subcategoriesByCategory]);
 
   const currentSubcategory: Subcategory | null = useMemo(() => {
     if (!selectedCategoryId || !selectedSubcategoryId) return null;
@@ -366,7 +371,7 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, cart?.customer?.customerNumber, visibleItemcodesSignature]);
 
-  const DIRECT_CATEGORIES = new Set(["all", "gift-box", "Sale", "Terrarium"]);
+  const DIRECT_CATEGORIES = new Set(["all", "gift-box", "sale", "terrarium"]);
 
   const headerTitle =
     step === "categories"
@@ -488,14 +493,16 @@ const [offlineProductsInfo, setOfflineProductsInfo] = useState<{
                 onPress={() => {
   setSelectedCategoryId(item.id);
 
-  // ✅ All -> direct products
-  if (item.id === "all") {
-    setSelectedSubcategoryId("all");
-    setStep("products");
-  } else {
-    setSelectedSubcategoryId(null);
-    setStep("subcategories");
-  }
+  // ✅ Direct categories -> direct products (zelfde als All)
+if (DIRECT_CATEGORIES.has(item.id)) {
+  setSelectedSubcategoryId("all");
+  setStep("products");
+  return;
+}
+
+// ✅ Overige -> eerst subcategorieën
+setSelectedSubcategoryId(null);
+setStep("subcategories");
 }}
               />
             </View>
