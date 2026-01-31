@@ -634,7 +634,9 @@ function inferAromaSubcategory(r: AfasProductRow) {
 
   if (containsText(c2 || "", "access")) return { subId: "accessories", subName: "Accessories" };
   if (containsText(c2 || "", "cubes")) return { subId: "cubes", subName: "Cubes" };
-  if (containsText(c2 || "", "gift")) return { subId: "giftbox", subName: "Aroma gift box" };
+  if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift set")) {
+  return { subId: "giftbox", subName: "Aroma gift box" };
+}
   if (containsText(c2 || "", "shapes")) return { subId: "shapes", subName: "Shapes" };
   if (containsText(c2 || "", "bowl")) return { subId: "bowl", subName: "Bowl" };
   if (containsText(c2 || "", "diffuser")) return { subId: "diffusers", subName: "Diffusers" };
@@ -738,6 +740,17 @@ function inferCategoryFromRow(r: AfasProductRow): {
 
   const c1n = normCat(c1 || "");
   const c3n = normCat(c3 || "");
+
+  // ✅ OVERRIDE: Aroma Gift set valt onder Aroma -> giftbox, ook als category_1 = Gift box
+if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift set")) {
+  return {
+    catId: "aroma",
+    catName: "Aroma",
+    subId: "giftbox",
+    subName: "Aroma gift box",
+    extraSubIds: [],
+  };
+}
 
     // =========================
   // ✅ Aroma / Candles / LED candle / Pottery overrides + mapping
