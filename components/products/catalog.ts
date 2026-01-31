@@ -764,7 +764,7 @@ console.log("POTTERY_MAP", r.itemcode, { c2, c5 });
   }
 
   // Line & Daydream
-  if (equalsText(c2n, "pottery > line pot") || equalsText(c2n, "pottery > daydream")) {
+  if (equalsText(c2n, "pottery > line pot`") || equalsText(c2n, "pottery > daydream")) {
     return { subId: "daydream", subName: "Line & Daydream pot" };
   }
 
