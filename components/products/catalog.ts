@@ -950,11 +950,29 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
 
   const stockStatus: StockStatus = availableStock > 0 ? "in_stock" : expected ? "expected" : "out";
 
-  const { catId, catName, subId, subName, extraSubIds } = inferCategoryFromRow(r);
-  const { c5 } = getCategoryFields(r);
+    const { catId, catName, subId, subName, extraSubIds } = inferCategoryFromRow(r);
+
+  // ✅ Extra categorie-labels (zonder primary category te overschrijven)
+  const { c1, c5 } = getCategoryFields(r);
+  const c1n = normCat(c1 || "");
   const c5n = normCat(c5 || "");
+
+  const extraCategoryIds: string[] = [];
+
+  // ✅ Sale als extra categorie
   const isSale = equalsText(c5 || "", "sale") || c5n.endsWith(" > sale");
-  const extraCategoryIds = isSale ? ["sale"] : [];
+  if (isSale) extraCategoryIds.push("sale");
+
+  // ✅ Alles met AFAS category_1 = gift box óók tonen onder Gift box
+  // (nodig voor Aroma gift sets die primair onder Aroma vallen)
+  const isGiftBoxC1 =
+    equalsText(c1 || "", "gift box") ||
+    equalsText(c1 || "", "gift-box") ||
+    c1n === "gift box" ||
+    c1n === "gift-box" ||
+    c1n === "giftbox";
+
+  if (isGiftBoxC1) extraCategoryIds.push("gift-box");
 
   const { main, all } = normalizeImages(r);
 
@@ -984,7 +1002,7 @@ export function mapAfasRowToProduct(r: AfasProductRow): Product {
     subcategoryName: subName,
 
     extraSubcategoryIds: extraSubIds.length ? extraSubIds : undefined,
-    extraCategoryIds: extraCategoryIds.length ? extraCategoryIds : undefined,
+    extraCategoryIds: extraCategoryIds.length ? Array.from(new Set(extraCategoryIds)) : undefined,
   };
 }
 
