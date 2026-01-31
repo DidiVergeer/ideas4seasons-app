@@ -634,9 +634,7 @@ function inferAromaSubcategory(r: AfasProductRow) {
 
   if (containsText(c2 || "", "access")) return { subId: "accessories", subName: "Accessories" };
   if (containsText(c2 || "", "cubes")) return { subId: "cubes", subName: "Cubes" };
- if (containsText(c2 || "", "aroma > gift set") || containsText(c2 || "", "gift set")) {
-  return { subId: "giftbox", subName: "Aroma gift box" };
-}
+  if (containsText(c2 || "", "gift")) return { subId: "giftbox", subName: "Aroma gift box" };
   if (containsText(c2 || "", "shapes")) return { subId: "shapes", subName: "Shapes" };
   if (containsText(c2 || "", "bowl")) return { subId: "bowl", subName: "Bowl" };
   if (containsText(c2 || "", "diffuser")) return { subId: "diffusers", subName: "Diffusers" };
@@ -749,7 +747,7 @@ function inferCategoryFromRow(r: AfasProductRow): {
     const item = normalizeItemcodeDigits((r as any)?.itemcode);
     if (LED_CHARGEABLE.has(String(item))) {
       const { subId, subName } = inferLedCandleSubcategory(r);
-      return { catId: "led-candle", catName: "Led candle", subId, subName, extraSubIds: [] };
+      return { catId: "led-candles", catName: "Led candle", subId, subName, extraSubIds: [] };
     }
   }
 
@@ -768,13 +766,13 @@ function inferCategoryFromRow(r: AfasProductRow): {
   // 5) Led candle (AFAS varianten)
   if (c1n === "led candle" || c1n === "led candles" || c1n === "led kaarsen" || c1n === "ledcandle") {
     const { subId, subName } = inferLedCandleSubcategory(r);
-    return { catId: "led-candle", catName: "Led candle", subId, subName, extraSubIds: [] };
+    return { catId: "led-candles", catName: "Led candle", subId, subName, extraSubIds: [] };
   }
 
   // 6) Sommige LED regels lijken in category_2 op "Candles > led candle tracy"
   if (containsText(c2 || "", "led candle")) {
     const { subId, subName } = inferLedCandleSubcategory(r);
-    return { catId: "led-candle", catName: "Led candle", subId, subName, extraSubIds: [] };
+    return { catId: "led-candles", catName: "Led candle", subId, subName, extraSubIds: [] };
   }
 
   // ✅ OVERRIDE: Lamp & dishes tonen onder Glass, ook als AFAS category_1 bv. Candles is
